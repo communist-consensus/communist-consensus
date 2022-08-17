@@ -1,0 +1,134 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "backend",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "./lib/es/src/backend/app.js",
+      ],
+      "env": {
+        //"DEBUG": "*,-libp2p*,-latency*,-libp2p:connection-manager",
+        "DEBUG": "blockchain-*",
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "mocha-test-utils",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/mocha",
+      "runtimeArgs": [
+        "lib/es/test/utils.js",
+        "--timeout",
+        "3600000",
+      ],
+      "env": {
+        //"DEBUG": "*,-libp2p*,-latency*,-libp2p:connection-manager",
+        "DEBUG": "blockchain-*",
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "mocha-test",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/mocha",
+      "runtimeArgs": [
+        "lib/es/test/**/*",
+        "--timeout",
+        "3600000",
+      ],
+      "env": {
+        //"DEBUG": "*,-libp2p*,-latency*,-libp2p:connection-manager",
+        "DEBUG": "blockchain-*",
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "local-mix",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-node",
+      "runtimeArgs": [
+        "${workspaceFolder}/src/backend/test.ts",
+      ],
+      "env": {
+        // "DEBUG": "*,-latency*,-libp2p:connection-manager",
+        "DEBUG": "ri-*",
+      },
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "config-c",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": ["./config.c.js"],
+      "program": "${workspaceFolder}/src/backend/app.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "env": {
+        "DEBUG": "*,-latency*,-libp2p:connection-manager",
+      },
+      "outFiles": [
+        "${workspaceFolder}/libs/**/*.js"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "config-b",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": ["./config.b.js"],
+      "program": "${workspaceFolder}/src/backend/app.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "env": {
+        "DEBUG": "*,-latency*,-libp2p:connection-manager",
+      },
+      "outFiles": [
+        "${workspaceFolder}/libs/**/*.js"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "config-a",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": ["./config.a.js"],
+      "program": "${workspaceFolder}/src/backend/app.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "env": {
+        "DEBUG": "*,-latency*,-libp2p:connection-manager",
+      },
+      "outFiles": [
+        "${workspaceFolder}/libs/**/*.js"
+      ]
+    }
+  ]
+}

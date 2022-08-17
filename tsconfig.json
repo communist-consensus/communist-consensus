@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "sourceMap": true,
+    "module": "ES2020",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "moduleResolution": "node",
+    "outDir": "libs",
+    "jsx": "react"
+  },
+  "exclude": ["node_modules", "libs"],
+  "include": ["./src/**/*", "./test/**/*"]
+}
