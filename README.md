@@ -1,6 +1,6 @@
 # Communist Consensus 去中心化决策系统(TODO)
 
-基于 Libp2p，HotStuffBFT，Aggregated Distributed Key Gerenation，IPFS，Electron 实现的一套 Proof of Human 的去中心化决策系统。
+基于 Libp2p，HotStuffBFT，Aggregatable Distributed Key Gerenation，IPFS，Electron 实现的一套 Proof of Human 的去中心化决策系统。
 
 ## 特性
 
@@ -36,7 +36,7 @@
 
 * 容忍至多 1 / 3 静态恶意节点
 * 区块的生成最少需要 2 / 3 节点同时在线
-* Distributed Key Generation 通信复杂度和计算取决于 Aggregated DKG
+* Distributed Key Generation 通信复杂度和计算取决于 Aggregatable DKG
 * 共识复杂度取决于 HotStuff
 
 ### 对比
