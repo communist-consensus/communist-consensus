@@ -1,6 +1,6 @@
 import sha from 'multihashing-async/src/sha.js';
 import sha256 from 'crypto-js/sha256.js';
-import { RSASignature, MID, IKBucket } from '../types';
+import { RSASignature, MID, IKBucket, PublicKey, PrivateKey } from '../types';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { RsaPublicKey, RsaPrivateKey } from 'libp2p-crypto/src/keys/rsa-class';
@@ -339,3 +339,11 @@ export function compute_witness_broadcast_duration(
     estimated_time_error,
   };
 };
+
+// TODO
+export function ecdsa_vrfy(pk: PublicKey, payload: Uint8Array, signature: Uint8Array) {
+  return true;
+}
+export function ecdsa_sign(sk: PrivateKey, payload: Uint8Array) {
+  return new Uint8Array();
+}

@@ -1,10 +1,10 @@
 import assert from 'node:assert';
 import EventEmitter from 'node:events';
 import IPFS from '../ipfs';
-import { MessageType } from '../types';
-import { encode, hash } from '../utils';
+import { InformerBody, SubProtocol } from '../types';
+import { decode, encode, hash } from '../utils';
 import { fec } from './fec';
-import messager from './messager';
+import informer from './informer';
 
 type PeerIndex = number;
 enum PRBCMessageType {
@@ -34,11 +34,12 @@ type READYMessage = {
 
 type PRBCMessage = VALMessage | ECHOMessage | READYMessage;
 /**
- * 每个节点将创建1个prbc实例
+ * 每个Epoch中的每个节点创建1个prbc实例
  * 
- * 关于i的 PRBC 实例保证 i 收到至少 n-f 个对 msg_i 的预确认
+ * 关于i的 PRBC 实例保证 i 的广播消息内容不被针对的前提下，收到至少 n-f 个对 msg_i 的预确认
  * 
- * (分片使消息msg_i难以被针对（优先级/传播成功率等等），在收到n-f个分片前无法得知消息内容。另外如果不使用分片，无法避免恶意节点广播大体积的虚假消息带来的带宽消耗。)
+ * (分片使消息msg_i难以被针对（优先级/传播成功率等等），在收到n-f个分片前无法得知消息内容。
+ * 另外也避免了恶意节点广播大体积的虚假消息带来的带宽消耗。)
  *
  * (1)
  * 把消息 m 分成 N 份，任意 K 份可以恢复 m
@@ -65,7 +66,7 @@ type PRBCMessage = VALMessage | ECHOMessage | READYMessage;
  *    ipfs get(cid)，生成这个阶段的证明
  *    输出 m 和 证明
  */
-export class ProvableReliableBroadcast extends EventEmitter {
+export class ProvableReliableBroadcast {
   N: number;
   K: number;
   selfIdx: number;
@@ -78,7 +79,7 @@ export class ProvableReliableBroadcast extends EventEmitter {
 
   ipfs: IPFS;
 
-  outputCIDs:Map<PeerIndex, string> = new Map();
+  outputCIDs: Map<PeerIndex, string> = new Map();
   outputSignatures: Map<PeerIndex, Map<PeerIndex, Uint8Array>> = new Map();
 
   outputs = new Map<PeerIndex, Uint8Array>();
@@ -95,15 +96,18 @@ export class ProvableReliableBroadcast extends EventEmitter {
 
   // map<source, set<sender>>
   sourceToReadySender = new Map<PeerIndex, Set<PeerIndex>>();
-  readySignatures: Map<PeerIndex, Map<string, Map<PeerIndex, Uint8Array>>> = new Map();
+  readySignatures: Map<
+    PeerIndex,
+    Map<string, Map<PeerIndex, Uint8Array>>
+  > = new Map();
 
   resolveFn: (data: {
-      outputs: Map<PeerIndex, Uint8Array>,
-      quorumCertification: {
-        cids: Map<PeerIndex, string>,
-        signatures: Map<PeerIndex, Map<string, Map<PeerIndex, Uint8Array>>>,
-      },
-    }) => void;
+    outputs: Map<PeerIndex, Uint8Array>;
+    quorumCertification: {
+      cids: Map<PeerIndex, string>;
+      signatures: Map<PeerIndex, Map<string, Map<PeerIndex, Uint8Array>>>;
+    };
+  }) => void;
 
   constructor({
     selfIdx,
@@ -118,7 +122,6 @@ export class ProvableReliableBroadcast extends EventEmitter {
     input: any;
     ipfs: IPFS;
   }) {
-    super();
     assert(N >= 3 * f + 1);
     assert(f >= 0);
     assert(selfIdx >= 0 && selfIdx < N);
@@ -188,46 +191,50 @@ export class ProvableReliableBroadcast extends EventEmitter {
   verifyPRBCMessage(sender: PeerIndex, data: PRBCMessage) {
     assert(
       data &&
-      (data.type === PRBCMessageType.ECHO ||
-        data.type === PRBCMessageType.VAL ||
-        data.type === PRBCMessageType.READY),
+        (data.type === PRBCMessageType.ECHO ||
+          data.type === PRBCMessageType.VAL ||
+          data.type === PRBCMessageType.READY),
     );
-    if (
-      data.type === PRBCMessageType.VAL
-    ) {
+    if (data.type === PRBCMessageType.VAL) {
       assert(
         data.piece instanceof Uint8Array &&
-        typeof data.roothash === 'string' &&
-        data.branch instanceof Array &&
-        data.branch.reduce((m, i) => m && typeof i === 'string', true) &&
-        this.merkleVerify(data.piece, data.roothash, data.branch, sender),
+          typeof data.roothash === 'string' &&
+          data.branch instanceof Array &&
+          data.branch.reduce((m, i) => m && typeof i === 'string', true) &&
+          this.merkleVerify(data.piece, data.roothash, data.branch, sender),
       );
-    } else if (
-      data.type === PRBCMessageType.ECHO
-    ) {
+    } else if (data.type === PRBCMessageType.ECHO) {
       assert(
         Number.isInteger(data.pieceProvider) &&
-        data.pieceProvider < this.N &&
-        data.pieceProvider >= 0 &&
-        Number.isInteger(data.sourceProvider) &&
-        data.sourceProvider < this.N &&
-        data.sourceProvider >= 0 &&
-        data.piece instanceof Uint8Array &&
-        typeof data.roothash === 'string' &&
-        data.branch instanceof Array &&
-        data.branch.reduce((m, i) => m && typeof i === 'string', true) &&
-        this.merkleVerify(data.piece, data.roothash, data.branch, data.pieceProvider),
+          data.pieceProvider < this.N &&
+          data.pieceProvider >= 0 &&
+          Number.isInteger(data.sourceProvider) &&
+          data.sourceProvider < this.N &&
+          data.sourceProvider >= 0 &&
+          data.piece instanceof Uint8Array &&
+          typeof data.roothash === 'string' &&
+          data.branch instanceof Array &&
+          data.branch.reduce((m, i) => m && typeof i === 'string', true) &&
+          this.merkleVerify(
+            data.piece,
+            data.roothash,
+            data.branch,
+            data.pieceProvider,
+          ),
       );
     } else if (data.type === PRBCMessageType.READY) {
-      assert(typeof data.sourceProviderMsgCID === 'string' &&
-        Number.isInteger(data.sourceProvider) &&
-        data.sourceProvider < this.N &&
-        data.sourceProvider >= 0
+      assert(
+        typeof data.sourceProviderMsgCID === 'string' &&
+          Number.isInteger(data.sourceProvider) &&
+          data.sourceProvider < this.N &&
+          data.sourceProvider >= 0,
       );
     }
   }
 
-  async onMessage(sender: PeerIndex, data: PRBCMessage, signature: Uint8Array) {
+  async onMessage(sender: PeerIndex, informer_body: InformerBody) {
+    const data = decode<PRBCMessage>(informer_body.data);
+    const signature = informer_body.signature;
     this.verifyPRBCMessage(sender, data);
     if (data.type === PRBCMessageType.VAL) {
       if (this.mtreeRoots.get(sender)) return;
@@ -245,11 +252,15 @@ export class ProvableReliableBroadcast extends EventEmitter {
       if (this.sourceToPieces.get(sourceProvider).get(pieceProvider)) return;
       this.sourceToPieces.get(sourceProvider).set(pieceProvider, piece);
       this.broadcast(data);
-      if (this.sourceToPieces.get(data.sourceProvider).size >= this.EchoThreshold) {
+      if (
+        this.sourceToPieces.get(data.sourceProvider).size >= this.EchoThreshold
+      ) {
         const { sourceProvider } = data;
         if (this.sourceToReadySender.get(sourceProvider).has(sender)) return;
         this.sourceToReadySender.get(sourceProvider).add(sender);
-        const sourceProviderMsg = this.encoder.decode(this.sourceToPieces.get(sourceProvider).values());
+        const sourceProviderMsg = this.encoder.decode(
+          this.sourceToPieces.get(sourceProvider).values(),
+        );
         const sourceProviderMsgCID = await this.ipfs.add(sourceProviderMsg);
         this.broadcast({
           type: PRBCMessageType.READY,
@@ -263,11 +274,18 @@ export class ProvableReliableBroadcast extends EventEmitter {
       this.sourceToReadySender.get(sourceProvider).add(sender);
 
       if (!this.readySignatures.get(sourceProvider).get(sourceProviderMsgCID)) {
-        this.readySignatures.get(sourceProvider).set(sourceProviderMsgCID, new Map());
+        this.readySignatures
+          .get(sourceProvider)
+          .set(sourceProviderMsgCID, new Map());
       }
-      this.readySignatures.get(sourceProvider).get(sourceProviderMsgCID).set(sender, signature);
+      this.readySignatures
+        .get(sourceProvider)
+        .get(sourceProviderMsgCID)
+        .set(sender, signature);
 
-      const nVote = this.readySignatures.get(sourceProvider).get(sourceProviderMsgCID).size;
+      const nVote = this.readySignatures
+        .get(sourceProvider)
+        .get(sourceProviderMsgCID).size;
 
       // Amplify ready messages
       if (nVote >= this.ReadyThreshold) {
@@ -277,11 +295,12 @@ export class ProvableReliableBroadcast extends EventEmitter {
       if (nVote >= this.OutputThreshold) {
         if (!this.outputCIDs.get(sourceProvider)) {
           this.outputCIDs.set(sourceProvider, sourceProviderMsgCID);
-          this.outputs.set(sourceProvider, await this.ipfs.get(sourceProviderMsgCID));
+          this.outputs.set(
+            sourceProvider,
+            await this.ipfs.get(sourceProviderMsgCID),
+          );
           if (this.outputs.size >= this.ExitThreshold) {
-            for (let i = 0; i < this.N; ++i) {
-              messager.removeListener(i, MessageType.PRBC, this.onMessage);
-            }
+            informer.removeListener(SubProtocol.PRBC, this.onMessage);
 
             for (let i = 0; i < this.N; ++i) {
               if (!this.outputs.get(i)) {
@@ -293,8 +312,8 @@ export class ProvableReliableBroadcast extends EventEmitter {
               quorumCertification: {
                 cids: this.outputCIDs,
                 signatures: this.readySignatures,
-              }
-            })
+              },
+            });
           }
         }
       }
@@ -328,16 +347,14 @@ export class ProvableReliableBroadcast extends EventEmitter {
         piece: pieces[i],
       });
     }
-    for (let i = 0; i < this.N; ++i) {
-      messager.addListener<PRBCMessage>(i, MessageType.PRBC, this.onMessage);
-    }
+    informer.addListener(SubProtocol.PRBC, this.onMessage);
     return await new Promise<{
-      outputs: Map<PeerIndex, Uint8Array>,
+      outputs: Map<PeerIndex, Uint8Array>;
       quorumCertification: {
-        cids: Map<PeerIndex, string>,
-        signatures: Map<PeerIndex, Map<string, Map<PeerIndex, Uint8Array>>>,
-      },
-    }>(resolve => {
+        cids: Map<PeerIndex, string>;
+        signatures: Map<PeerIndex, Map<string, Map<PeerIndex, Uint8Array>>>;
+      };
+    }>((resolve) => {
       this.resolveFn = resolve;
     });
   }
