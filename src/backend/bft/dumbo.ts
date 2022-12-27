@@ -63,9 +63,8 @@ import { Context } from "./types";
  * 如果a的票数
  * 
  * 1. 节点i使用 ProvableReliableBroadcast 协议发送 msg[i]
- * 2. 关于接收节点x，发送节点 i 的 PRBC 协议保证 x 收到至少 n-f 个对 msg[i] 的预确认，并生成证明
- * [完成 阶段一阶段二][我知道别人（不）知道]
- * 3. validatedCommonSubset/VACS，每个节点一个vacs实例，与prbc并发，输入为prbc_proofs[self_idx] 包含 [prbc_sid, root_hash, sigma]
+ * 2. 关于接收节点x，发送节点 i 的 PRBC 协议保证 x 收到至少 n-f 个对 msg[i] 的预确认，并生成证明。
+ * 3. 进入validatedCommonSubset/VACS，每个节点一个vacs实例，输入为prbc_outputs[self_idx] 包含 [prbc_sid, root_hash, sigma]
  *   3.1 广播VACS的input
  *   3.2 如果收到N-f个VACS广播 
  * [完成 阶段三][我知道“别人知道我（不）知道”]
@@ -88,30 +87,15 @@ import { Context } from "./types";
  * 将投票作为aba输入，循环aba直到aba返回common coin
  * 根据aba的结果决定是否采用这个随机节点的消息组合作为区块输入
  */
-export async function start({
-  sid,
-  pid,
-  B,
-  N,
-  f,
-  sPk,
-  sSK,
-  sPk1,
-  sSK1,
-  sPk2,
-  sSK2,
-  ePk,
-  eSK,
-}: Context) {
+export async function start(ctx: Context) {
   let r = 0;
 
   const vacs_recv = [];
   const tpke_recv = [];
-  const prbs_recvs = new Array(N).fill(0).map(i => []);
+  const prbs_recvs = new Array(ctx.N).fill(0).map(i => []);
 
   const my_prbc_input = [];
 
-  const prbs_outputs = new Array(N).fill(0).map(i => []);
   const prbc_proofs = {};
 
   const vacs_input = [];
@@ -119,13 +103,11 @@ export async function start({
 
   const input = 'test';
   const ipfs = await IPFS.create();
-  const selfIdx = pid;
-  const { outputs, quorumCertification } = await (
+  await (
     new ProvableReliableBroadcast({
-      selfIdx,
-      N,
-      f,
+      ctx,
       input,
+      outputs,
       ipfs,
     })
   ).start();

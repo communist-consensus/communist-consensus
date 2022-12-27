@@ -23,3 +23,5 @@ export type Context = {
   PK2s: PublicKey[]; // list PK2s: an array of ``coincurve.PublicKey'', i.e., N public keys of ECDSA for all parties
   SK2s: PublicKey[]; // PublicKey SK2: ``coincurve.PrivateKey'', i.e., secret key of ECDSA
 };
+
+export type PRBCOutputs = Map<NodeIndex, Uint8Array>;
