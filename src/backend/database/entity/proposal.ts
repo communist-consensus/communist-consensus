@@ -9,7 +9,7 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { ProposalStatus, IPFSAddress, DBProposal } from '../../../../shared/types';
+import { ProposalStatus, IPFSAddress, DBProposal, DBBlock, ProposalContent } from '../../../../shared/types';
 import Solution from './solution';
 import Domain from './domain';
 import Peer from './peer';
@@ -20,16 +20,16 @@ import { bigint } from '../transformer';
 @Entity()
 export default class Proposal implements DBProposal {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  id: string;
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  prev_block_hash: IPFSAddress;
+  prev_block_cid: IPFSAddress<DBBlock>;
 
   @Column('varchar', { length: ID_LENGTH })
   computed_latest_conference_id: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  content_cid: IPFSAddress;
+  content_cid: IPFSAddress<ProposalContent>;
 
   @Column('varchar', { length: TITLE_LENGTH })
   title: string;

@@ -14,7 +14,7 @@ import Solution from './solution';
 @Entity()
 export default class Task implements DBTask {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  id: string;
+  uuid: string;
 
   @Column({
     type: 'int',

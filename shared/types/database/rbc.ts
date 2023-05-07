@@ -1,53 +1,48 @@
-import { NodeID } from "../common";
+import { EntityManager } from "typeorm";
+import { Action, Actions, DBBlock, RBCEchoMessage, RBCReadyMessage, RBCValMessage } from "../../../src/backend/types";
+import { Encoded, IPFSAddress, NodeID, Signature } from "../common";
 
-export interface IDBRBC {
-  set_val: (epoch: number, node_id: NodeID, v: Buffer) => Promise<void>;
-  has_val: (epoch: number, node_id: NodeID) => Promise<boolean>;
-  get_val: (epoch: number, node_id: NodeID) => Promise<Buffer | undefined>;
-
-  set_echo: (
-    epoch: number,
-    node_id: NodeID,
-    source_provider: NodeID,
-    roothash: string,
-    v: Buffer,
-  ) => Promise<void>;
-  get_echo: (
-    epoch: number,
-    source_provider: NodeID,
-    roothash: string,
-  ) => Promise<Buffer[]>;
-  has_echo: (
-    epoch: number,
-    node_id: NodeID,
-    source_provider: NodeID,
-  ) => Promise<boolean>;
-  get_echo_size: (
-    epoch: number,
-    source_provider: NodeID,
-    roothash: string,
-  ) => Promise<number>;
-
-  set_ready: (
-    epoch: number,
-    node_id: NodeID,
-    source_provider: NodeID,
-    cid: string,
-    signature: Buffer,
-  ) => Promise<void>;
-  get_ready_size: (
-    epoch: number,
-    source_provider: NodeID,
-    cid: string
-  ) => Promise<number>;
-  get_ready: (
-    epoch: number,
-    node_id: NodeID,
-    source_provider: NodeID,
-  ) => Promise<Buffer | undefined>;
-  has_ready: (
-    epoch: number,
-    node_id: NodeID,
-    source_provider: NodeID,
-  ) => Promise<boolean>;
+export enum RBCStage {
+  VAL,
+  ECHO,
+  READY,
+  RESOLVED,
 }
+export interface DBRBCResolved {
+  uuid?: string;
+  root_block_cid: IPFSAddress<DBBlock>;
+  epoch: number;
+  provider: NodeID;
+  cid: IPFSAddress<Actions>;
+}
+
+export interface DBRBCVal extends Omit<Omit<RBCValMessage, 'branch'>, 'stage'> {
+  uuid?: string;
+  branch: Uint8Array;
+  signature: Signature<RBCValMessage>;
+}
+
+export interface DBRBCEcho extends Omit<Omit<RBCEchoMessage, 'branch'>, 'stage'> {
+  uuid?: string;
+  branch: Uint8Array;
+  signature: Signature<RBCEchoMessage>;
+}
+
+export interface DBRBCReady extends Omit<RBCReadyMessage, 'stage'> {
+  uuid?: string;
+  signature: Signature<RBCReadyMessage>;
+}
+
+/**
+ * 证明一个节点在RBC协议中广播了Actions
+ * 
+ * 由N-f个节点的RBCReady签名组成
+ */
+export type RBCProof = {
+  node_id: NodeID;
+  cid: IPFSAddress<Actions>;
+  signatures: {
+    signatory: NodeID;
+    signature: Signature<RBCReadyMessage>;
+  }[]
+};

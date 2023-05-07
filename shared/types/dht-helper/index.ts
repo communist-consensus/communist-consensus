@@ -4,15 +4,8 @@ import { Multiaddr } from 'multiaddr';
 import { PeerId } from '@libp2p/interface-peer-id';
 
 import { Connection, Stream } from '@libp2p/interface-connection';
-import { NodeID } from '../common';
-export interface IAddressChecker {
-  mount: () => void;
-  check: (peer_or_connection: {
-    peer?: PeerId;
-    connection?: Connection;
-  }) => Promise<Multiaddr>;
-}
-
+import { Encoded, IPFSAddress, NodeID } from '../common';
+import { EntityManager } from 'typeorm';
 export interface INetworkDetect extends EventEmitter {
   address: string;
 }
@@ -67,46 +60,38 @@ export interface IKBucket extends EventEmitter {
 
 export type Input = Uint8Array;
 
-export type RBCOutputs = Map<NodeID, Uint8Array>;
-
-export type IP2PBroadcastHandler<T> = (
-  peer: PeerId,
-  msg: T,
+export type IDHTBroadcastHandler<T> = (
+  node_id: NodeID,
+  msg: IDHTHelperCommonMessage<T>,
   connection: Connection,
   stream: Stream,
 ) => void;
-export type IP2PBroadcastHandlerMap<T> = Map<string, IP2PBroadcastHandler<IP2PBroadcastSubProtocolMessageWrapper<T>>[]>;
-export interface IP2PBroadcastProtocol {
-  addListener: <T>(
-    subProtocol: string,
-    handler: IP2PBroadcastHandler<IP2PBroadcastSubProtocolMessageWrapper<T>>,
-  ) => void;
-  removeListener: <T>(
-    subProtocol: string,
-    handler: IP2PBroadcastHandler<IP2PBroadcastSubProtocolMessageWrapper<T>>,
-  ) => void;
-
-  broadcast: <T>(msg: IP2PBroadcastSubProtocolMessageWrapper<T>) => Promise<void>;
-  // kb_broadcast: <T>(msg: IP2PBroadcastProtocolDecodedMessage<T>) => Promise<void>;
-  send: <T>(
-    target: NodeID,
-    msg: IP2PBroadcastSubProtocolMessageWrapper<T>,
-  ) => Promise<void>;
+export type IDHTBroadcastHandlerMap<T> = Map<T, IDHTBroadcastHandler<T>[]>;
+export interface IDHTHelperCommonMessage<T> {
+  subProtocol: T;
+  msg: Uint8Array;
+  signature: Uint8Array;
 }
 
-export type RILibp2p = Libp2p & {
-  address_checker: IAddressChecker;
-  network_detect: INetworkDetect;
-  dynamic_relay: IDynamicRelay;
-  p2pbroadcast_protocol: IP2PBroadcastProtocol;
-};
+export interface IDHTHelper<T> {
+  addListener: (subProtocol: T, handler: IDHTBroadcastHandler<T>) => void;
+  removeListener: (subProtocol: T, handler: IDHTBroadcastHandler<T>) => void;
 
-export type P2PBroadcastProtocolOptions = {
+  broadcast: (
+    common_msg: IDHTHelperCommonMessage<T>,
+  ) => Promise<void>;
+  // kb_broadcast: <T>(msg: <T>) => Promise<void>;
+  send: <T>(
+    target: NodeID,
+    common_msg: IDHTHelperCommonMessage<T>,
+  ) => Promise<void>;
+
+  provide?: <T>(x: Encoded<T>) => Promise<IPFSAddress<T>>;
+  get: <T>(cid: IPFSAddress<T>) => Promise<T>;
+}
+
+export type DHTBroadcastProtocolOptions = {
   success_rate: number; // （预计）单次传播的成功率
   up_rate: number; // （预计）在线率
   expected_success_rate: number;
 };
-
-export type IP2PBroadcastSubProtocolMessageWrapper<T> = {
-  subProtocol: string;
-} & T;

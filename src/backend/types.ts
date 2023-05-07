@@ -1,33 +1,9 @@
 export * from '../../shared/types';
-import { ABABooleanValue, ABAValue, IABAPRoof, IDBABA, NodeID } from '../../shared/types';
+import { DataSourceOptions, EntityManager } from 'typeorm';
+import { ABABooleanValue, ABAMessage, ABAProtocolStage, ABAValue, Action, Actions, DBBlock, IDHTHelperCommonMessage, IPFSAddress, NodeID, RBCProtocols, RBCProtocolStage } from '../../shared/types';
 
 export type IABAEvents = {
-  resolveOne: (node_id: NodeID, proof: IABAPRoof) => void;
-
-  receiveFinal: (
-    sender: string,
-    store: IDBABA,
-    r: number,
-    v: ABAValue,
-  ) => void;
-  receivePrevote: (
-    sender: string,
-    store: IDBABA,
-    r: number,
-    v: ABABooleanValue,
-  ) => void;
-  receiveVote: (
-    sender: string,
-    store: IDBABA,
-    r: number,
-    v: ABABooleanValue,
-  ) => void;
-  receiveMainVote: (
-    sender: string,
-    store: IDBABA,
-    r: number,
-    v: ABAValue,
-  ) => void;
+  broadcast: (manager: EntityManager, msg: ABAMessage) => void;
 };
 
 export interface IRBCProof {
@@ -36,41 +12,93 @@ export interface IRBCProof {
   signature: Uint8Array;
 }
 
-
-export enum RBCMessageType {
-  VAL,
-  ECHO,
-  READY,
-}
-export type VALMessage = {
-  type: RBCMessageType.VAL;
+export type RBCValMessage = {
+  stage: RBCProtocolStage.RBC_VAL,
+  root_block_cid: IPFSAddress<DBBlock>;
   epoch: number;
   branch: string[];
   piece: Uint8Array;
   roothash: string;
+  piece_provider: NodeID;
+  piece_receiver: NodeID;
 };
-export type ECHOMessage = {
-  type: RBCMessageType.ECHO;
+export type RBCEchoMessage = {
+  stage: RBCProtocolStage.RBC_ECHO,
+  root_block_cid: IPFSAddress<DBBlock>;
   epoch: number;
-  sourceProvider: NodeID;
-  pieceOwner: NodeID;
+  piece_provider: NodeID;
+  piece_receiver: NodeID;
   branch: string[];
   piece: Uint8Array;
   roothash: string;
+  sender: NodeID;
 };
-export type READYMessage = {
-  type: RBCMessageType.READY;
+export type RBCReadyMessage = {
+  root_block_cid: IPFSAddress<DBBlock>;
+  stage: RBCProtocolStage.RBC_READY,
   epoch: number;
-  sourceProvider: NodeID;
-  sourceProviderMsgCID: string;
+  provider: NodeID;
+  cid: IPFSAddress<Actions>;
+  sender: NodeID;
 };
 
-export type RBCMessage = VALMessage | ECHOMessage | READYMessage;
+export type RBCMessage = RBCValMessage | RBCEchoMessage | RBCReadyMessage;
 export type IRBCEvents = {
-  receiveVal: (sender: string, data: VALMessage) => Promise<void>;
-  receiveEcho: (sender: string, data: ECHOMessage) => Promise<void>;
-  receiveReady: (sender: string, data: READYMessage, signature: Uint8Array) => Promise<void>;
+  receiveVal: (sender: string, data: RBCValMessage) => Promise<void>;
+  receiveEcho: (sender: string, data: RBCEchoMessage) => Promise<void>;
+  receiveReady: (sender: string, data: RBCReadyMessage, signature: Uint8Array) => Promise<void>;
 
   resolveOne: (node_id: NodeID, proof: IRBCProof) => void;
   abort: () => void;
 };
+
+export enum RBCFromWorkerMessageType {
+  resolveOne,
+  rpc,
+  addListener,
+}
+export enum RBCRPCScope {
+  dht_helper = 'dht_helper',
+}
+export type RBCFromWorkerMessage =
+  | {
+      type: RBCFromWorkerMessageType.resolveOne;
+      node_id: NodeID;
+    }
+  | {
+      type: RBCFromWorkerMessageType.addListener;
+      subProtocol: RBCProtocols;
+    }
+  | {
+      type: RBCFromWorkerMessageType.rpc;
+      scope:RBCRPCScope;
+      args: any[];
+      fn: string;
+      call_id?: string;
+    };
+
+export enum RBCToWorkerMessageType {
+  RBCinternal,
+  RPCResponse,
+}
+export type RBCToWorkerMessage =
+  | {
+      type: RBCToWorkerMessageType.RPCResponse;
+      call_id: string,
+      data: any;
+    }
+  | IDHTHelperCommonMessage<RBCProtocols> & {
+      type: RBCToWorkerMessageType.RBCinternal;
+      peer: NodeID;
+    };
+
+export interface IRBCWorkerInitialData {
+  node_id: string;
+  epoch: number;
+  N: number;
+  f: number;
+  input: Action[];
+  sk: Uint8Array;
+  root_block_cid: IPFSAddress<DBBlock>;
+  datasource_options: DataSourceOptions; // except for entities
+}

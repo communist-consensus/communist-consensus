@@ -40,7 +40,7 @@ import {
   CommonSolution,
   DBDomainProposalPair,
   DBPeer,
-  DBProposal,
+  IProposalStore,
   DBSolution,
   DBTask,
   DomainEntity,

@@ -11,18 +11,18 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ID_LENGTH } from '../../../../shared/constant';
-import { ProposalStatus, IPFSAddress } from '../../../../shared/types';
+import { ProposalStatus, IPFSAddress, DBDomain } from '../../../../shared/types';
 import Proposal from './proposal';
 
 @Entity()
-@Index(['id', 'parent_id'], { unique: true })
-export default class Domain {
+@Index(['uuid', 'parent_uuid'], { unique: true })
+export default class Domain implements DBDomain {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  id: string;
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
   name: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  parent_id: string;
+  parent_uuid: string;
 }

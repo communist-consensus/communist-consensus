@@ -64,7 +64,7 @@ const get_initial_action_bundle = (
         {
           type: VITaskType.DomainAdd,
           supported_types: [
-            VITaskType.SelfUpgrade,
+            VITaskType.Upgrade,
             VITaskType.DomainAdd,
             VITaskType.DomainMerge,
             VITaskType.DomainModify,

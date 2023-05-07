@@ -44,7 +44,7 @@ import {
   CommonProposal,
   CommonSolution,
   DBDomainProposalPair,
-  DBProposal,
+  IProposalStore,
   DBSolution,
   DBSolutionComment,
   DBTask,

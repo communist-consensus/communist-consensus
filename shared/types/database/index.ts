@@ -5,14 +5,8 @@ export * from './block';
 export * from './aba';
 export * from './rbc';
 
-import { Connection } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import { Context, ConsensusConfig } from '..';
-import { IDBDomain } from './domain';
-import { IDBPeer } from './peer';
-import { IDBBlock } from './block';
-import { IDBABA } from './aba';
-import { IDBProposal } from './proposal';
-import { IDBRBC } from './rbc';
 
 export type MysqlConfig = {
   host: string;
@@ -21,18 +15,9 @@ export type MysqlConfig = {
 };
 
 export interface IDatabase {
-  connection: Connection;
+  datasource: DataSource;
 
   close: () => Promise<void>;
   clear: () => Promise<void>;
   reconnect: () => Promise<void>;
-}
-
-export interface IDatabaseManager {
-  rbc: IDBRBC;
-  domain: IDBDomain;
-  peer: IDBPeer;
-  proposal: IDBProposal;
-  block: IDBBlock;
-  aba: IDBABA;
 }

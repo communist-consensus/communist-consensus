@@ -1,10 +1,10 @@
 import assert from 'assert';
-import { init } from '../src/backend/bft/erasure-coding';
+import createErasureCoding from '../src/backend/bft/erasure-coding';
 describe('fec', function() {
   it('erasure-coding-success', async function () {
     const N = 10;
     const f = 3;
-    const erasure_coding = await init(N, f);
+    const erasure_coding = await createErasureCoding(N, f);
     const origin = Uint8Array.from([1, 2, 3]);
     const parts = erasure_coding.encode(origin);
 
@@ -22,7 +22,7 @@ describe('fec', function() {
   it('erasure-coding-failed', async function () {
     const N = 10;
     const f = 3;
-    const erasure_coding = await init(N, f);
+    const erasure_coding = await createErasureCoding(N, f);
     const origin = Uint8Array.from([1, 2, 3]);
     const parts = erasure_coding.encode(origin);
 
@@ -44,7 +44,7 @@ describe('fec', function() {
   it('erasure-coding-failed2', async function () {
     const N = 10;
     const f = 3;
-    const erasure_coding = await init(N, f);
+    const erasure_coding = await createErasureCoding(N, f);
     const origin = Uint8Array.from([1, 2, 3]);
     const parts = erasure_coding.encode(origin);
 

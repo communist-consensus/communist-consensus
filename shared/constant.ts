@@ -21,7 +21,7 @@ export const MIN_ONLINE_RATE = 0.5;
 
 export const MAX_VI_TASK_DEPTH = 10;
 
-export const ID_LENGTH = 300;
+export const ID_LENGTH = 128;
 export const KV_LENGTH = 1000;
 export const URL_MAX_LENGTH = 300;
 export const TITLE_LENGTH = 100;

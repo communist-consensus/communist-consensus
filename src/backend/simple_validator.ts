@@ -22,7 +22,6 @@ import {
   ActionModifyProfile,
   ActionQuit,
   Actions,
-  ActionsTestimony,
   CommonProposal,
   CommonSolution,
   DBBlock,
@@ -32,11 +31,13 @@ import {
 import { TITLE_LENGTH } from '../../shared/constant';
 
 const db_block_keys = new Set<keyof DBBlock>([
-  'block_hash',
+  'block_cid',
+  'start_timestamp',
   'epoch',
-  'prev_block_hash',
+  'mass_actions',
+  'prev_block_cid',
   'aba_proofs',
-  'ecrbc_proofs',
+  'rbc_proofs',
 ]);
 const action_initial_action_keys = new Set<keyof ActionInitialAction>([
   'tasks',
@@ -61,10 +62,10 @@ const proposal_properties_keys = new Set<keyof ProposalProperties>([
 ]);
 const action_set_proposal_properties_keys = new Set<
   keyof ActionSetProposalProperties
->(['type', 'proposal_id', 'properties']);
+>(['type', 'proposal_uuid', 'properties']);
 const action_vote_solution_keys = new Set<keyof ActionVoteSolution>([
   'type',
-  'solution_id',
+  'solution_uuid',
 ]);
 const solution_keys = new Set<keyof CommonSolution>(['tasks', 'content_cid']);
 const action_make_proposal_keys = new Set<keyof ActionMakeProposal>([
@@ -75,17 +76,17 @@ const proposal_keys = new Set<keyof CommonProposal>([
   'title',
   'content_cid',
   'default_solution',
-  'domain_ids',
+  'domain_uuids',
   'properties',
 ]);
 const action_quit_keys = new Set<keyof ActionQuit>(['type']);
 const action_commit_solution_keys = new Set<keyof ActionCommitSolution>([
   'type',
-  'proposal_id',
+  'proposal_uuid',
   'solution',
 ]);
 const action_freeze_proposal_keys = new Set<keyof ActionFreezeProposal>([
-  'proposal_id',
+  'proposal_uuid',
   'type',
   'content_cid',
 ]);
@@ -222,7 +223,7 @@ export function validate_proposal(proposal: CommonProposal) {
     validate_IPFS_address(proposal.content_cid) &&
     validate_solution(proposal.default_solution) &&
     validate_proposal_properties(proposal.properties) &&
-    validate_ids(proposal.domain_ids)
+    validate_ids(proposal.domain_uuids)
   );
 }
 
@@ -312,7 +313,7 @@ export function validate_set_proposal_properties(
     typeof action === 'object' &&
     action.type === ActionType.SetProposalProperties &&
     Object.keys(action).length === action_set_proposal_properties_keys.size &&
-    validate_id(action.proposal_id) &&
+    validate_id(action.proposal_uuid) &&
     validate_proposal_properties_partial(action.properties)
   );
 }
@@ -322,7 +323,7 @@ export function validate_vote_solution(action: ActionVoteSolution) {
     typeof action === 'object' &&
     Object.keys(action).length === action_vote_solution_keys.size &&
     action.type === ActionType.VoteSolution &&
-    validate_id(action.solution_id)
+    validate_id(action.solution_uuid)
   );
 }
 
@@ -331,7 +332,7 @@ export function validate_freeze_proposal(action: ActionFreezeProposal) {
     typeof action === 'object' &&
     Object.keys(action).length === action_freeze_proposal_keys.size &&
     action.type === ActionType.FreezeProposal &&
-    validate_id(action.proposal_id)
+    validate_id(action.proposal_uuid)
   );
 }
 
@@ -340,7 +341,7 @@ export function validate_commit_solution(action: ActionCommitSolution) {
     typeof action === 'object' &&
     Object.keys(action).length === action_commit_solution_keys.size &&
     action.type === ActionType.CommitSolution &&
-    validate_id(action.proposal_id) &&
+    validate_id(action.proposal_uuid) &&
     validate_solution(action.solution)
   );
 }
@@ -349,13 +350,13 @@ export function validate_comment(action: ActionComment) {
   if (typeof action.content_cid !== 'string') {
     return false;
   }
-  if (action.proposal_id && !validate_id(action.proposal_id)) {
+  if (action.proposal_uuid && !validate_id(action.proposal_uuid)) {
     return false;
   }
-  if (action.solution_id && !validate_id(action.solution_id)) {
+  if (action.solution_uuid && !validate_id(action.solution_uuid)) {
     return false;
   }
-  if (action.proposal_id && action.solution_id) {
+  if (action.proposal_uuid && action.solution_uuid) {
     return false;
   }
   if (Object.keys(action).length !== 4) {
@@ -372,7 +373,7 @@ export function validate_task_type(type: VITaskType) {
   return validate_positive_integer(type) && type >= 1 && type <= 1000;
 }
 
-export function validate_id(id: SolutionID | ProposalID | IPFSAddress) {
+export function validate_id(id: SolutionID | ProposalID | IPFSAddress<any>) {
   return typeof id === 'string' && id.length <= 128 && id.length >= 3;
 }
 
@@ -418,7 +419,7 @@ export function validate_task(task: VITask) {
   } else if (task.type === VITaskType.DomainModify) {
   } else if (task.type === VITaskType.PeerAdd) {
   } else if (task.type === VITaskType.PeerDelete) {
-  } else if (task.type === VITaskType.SelfUpgrade) {
+  } else if (task.type === VITaskType.Upgrade) {
     return validate_script(task.script);
   } else if (task.type === VITaskType.RevokeProposal) {
   } else {
@@ -446,10 +447,10 @@ export function validate_db_block(block: DBBlock) {
   return (
     typeof block === 'object' &&
     Object.keys(block).length === db_block_keys.size &&
-    validate_IPFS_address(block.block_hash) &&
-    validate_IPFS_address(block.prev_block_hash) &&
+    validate_IPFS_address(block.block_cid) &&
+    validate_IPFS_address(block.prev_block_cid) &&
     validate_IPFS_address(block.aba_proofs) &&
-    validate_IPFS_address(block.ecrbc_proofs) &&
+    validate_IPFS_address(block.rbc_proofs) &&
     validate_integer(block.epoch)
   );
 }

@@ -1,24 +1,18 @@
 import type { Libp2p } from 'libp2p';
-import { PeerId } from '@libp2p/interface-peer-id';
 export * from './database';
 export * from './consensus';
-export * from './p2p';
+export * from './dht-helper';
 export * from './common';
 
-import { IDatabase, IDatabaseManager } from './database';
-import {
-  ActionBundle,
-  Actions,
-  ActionSubjects,
-  BlockContext,
-  Profile,
-} from './consensus';
-import { IP2PBroadcastProtocol, RILibp2p } from './p2p';
-import EventEmitter from 'events';
-import { NodeID } from './common';
+import { Profile } from './consensus';
+import { IDHTHelper } from './dht-helper';
+import { EventEmitter } from 'tsee';
+import { IPFSAddress, NodeID } from './common';
+import { DBBlock, SubProtocols } from '../../src/backend/types';
+import { DataSource } from 'typeorm';
+import { DualKadDHT, KadDHT } from '@libp2p/kad-dht';
 
-export type ConsensusConfig = {
-  public_key: string; // base64pad, rsa2048
+export type ConsensusConfig = Profile & {
   private_key: string; // base64pad, rsa2048
 };
 
@@ -27,28 +21,25 @@ export type InitialParams = {
   initial_timestamp: number;
 };
 
-export type Signature = Uint8Array;
-
-export type CID = string;
-
-export interface IContentDeliverer {
-  provide: (x: any) => Promise<CID>;
-  get: <T>(cid: CID) => Promise<T>;
-}
-
 export type Context = {
+  root_block_cid: IPFSAddress<DBBlock>;
+  prev_block_cid: IPFSAddress<DBBlock>;
   epoch: number;
-  node_id: NodeID; // Node id.
-  db: IDatabase;
   N: number; // Number of nodes in the network.
   f: number; // Number of faulty nodes that can be tolerated.
+  start_timestamp: number;
+  interval: number;
+
+  node_id: NodeID; // Node id.
+  datasource: DataSource;
   sk: Uint8Array;
   pk: Uint8Array;
-  PKs: { [node_id: string]: Uint8Array }; // list PK2s: an array of ``coincurve.PublicKey'', i.e., N public keys of ECDSA for all parties
-  peer_ids: { [node_id: string]: PeerId };
-  node_id_to_index: { [node_id: string]: number };
-  libp2p_node?: Libp2p;
-  content_deliverer: IContentDeliverer;
+  libp2p_node?: Libp2p<{dht: DualKadDHT}>;
   log?: (...args: any[]) => void;
-  p2pbroadcast_protocol?: IP2PBroadcastProtocol;
+  dht_helper?: IDHTHelper<SubProtocols>;
+  ee: EventEmitter<BFTEvents>;
+};
+
+export type BFTEvents = {
+  new_block: (block_cid: IPFSAddress<DBBlock>) => void;
 };

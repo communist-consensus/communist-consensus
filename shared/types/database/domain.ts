@@ -1,3 +1,4 @@
+import { EntityManager } from 'typeorm';
 import { IPFSAddress, NodeID } from '../common';
 import {
   CommonProposal,
@@ -10,67 +11,16 @@ import {
   SolutionID,
 } from '../consensus';
 
-export interface DomainEntity {
+export interface DBDomain {
   name: string;
-  id: string;
-  parent_id: string;
+  uuid: string;
+  parent_uuid: string;
 }
 
 export type DBDomainProposalPair = {
-  id: number;
-  domain_id: string;
-  proposal_id: string;
+  uuid: string;
+  domain_uuid: string;
+  proposal_uuid: string;
   proposal_status: ProposalStatus;
   computed_n_participant: number;
 };
-
-export interface IDBDomain {
-  rename_domain: (domain_id: DomainID, name: string) => Promise<void>;
-  merge_domain: (
-    target_domain_id: DomainID,
-    domain_id: DomainID,
-  ) => Promise<void>;
-  get_domain: (domain_id: DomainID) => Promise<DomainEntity>;
-  get_domain_top: (domain_id: DomainID) => Promise<ProposalID>;
-  add_domain: (
-    domain_id: DomainID,
-    domain: Domain,
-    parent_id?: DomainID,
-  ) => Promise<void>;
-  has_domain: (domain_id: DomainID) => Promise<boolean>;
-  proposal_is_in_domain: (
-    proposal_id: ProposalID,
-    domain_id: DomainID,
-  ) => Promise<boolean>;
-  activate_proposals: () => Promise<void>;
-  get_domains: (
-    page: number,
-    n?: number,
-  ) => Promise<{
-    domains: DomainEntity[];
-    total: number;
-    n: number;
-  }>;
-  get_sub_domains: (
-    domain_id: DomainID,
-    page: number,
-    n?: number,
-  ) => Promise<{
-    domains: DomainEntity[];
-    total: number;
-    n: number;
-  }>;
-  get_proposals: (
-    domain_id: DomainID,
-    page: number,
-    n?: number,
-  ) => Promise<{
-    proposals: {
-      proposal_id: ProposalID;
-      proposal_status: ProposalStatus;
-      computed_n_participant: number;
-    }[];
-    total: number;
-    n: number;
-  }>;
-}

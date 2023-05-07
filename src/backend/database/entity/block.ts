@@ -1,22 +1,28 @@
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 import { ID_LENGTH, URL_MAX_LENGTH } from '../../../../shared/constant';
-import { DBBlock } from '../../../../shared/types';
+import { ABAProof, DBBlock, IPFSAddress, MassActions, RBCProof } from '../../../../shared/types';
 import { bigint } from '../transformer';
 
 @Entity()
 export default class Block implements DBBlock {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  block_hash: string;
+  block_cid: IPFSAddress<DBBlock>;
 
   @Column('int')
   epoch: number;
 
+  @Column('bigint', { transformer: bigint })
+  start_timestamp: number;
+
   @Column('varchar', { length: ID_LENGTH })
-  prev_block_hash: string;
+  prev_block_cid: IPFSAddress<DBBlock>;
 
   @Column('varchar', { length: URL_MAX_LENGTH })
-  ecrbc_proofs: string;
+  mass_actions: IPFSAddress<MassActions>;
 
   @Column('varchar', { length: URL_MAX_LENGTH })
-  aba_proofs: string;
+  rbc_proofs: IPFSAddress<RBCProof[]>;
+
+  @Column('varchar', { length: URL_MAX_LENGTH })
+  aba_proofs: IPFSAddress<ABAProof[]>;
 }

@@ -3,11 +3,13 @@ import {
   Query,
   Pair,
   Datastore,
-  Options,
   Key,
 } from 'interface-datastore';
-import { AwaitIterable } from 'interface-store';
-import { Connection, createConnection } from 'typeorm';
+import {
+  AwaitIterable,
+  Options,
+} from 'interface-store';
+import { Connection, EntityManager, QueryRunner, createConnection } from 'typeorm';
 import map from 'it-map';
 
 import KV from '../database/entity/kv';
@@ -22,20 +24,27 @@ enum BatchOP {
   delete,
 }
 
-const createDataStore = (connection: Connection): Datastore => {
+const createDataStore = (manager: EntityManager): Datastore => {
   async function put(key: Key, val: Uint8Array, options?: Options) {
-    const kv = new KV();
-    kv.key = key.toString();
-    kv.value = uint8array_to_b64pad(val);
-    kv.name = key.name();
     const namespaces = key.namespaces();
-    kv.prefix = `/${namespaces.slice(0, namespaces.length - 1).join('/')}`;
-    log('put', kv);
-    await connection.getRepository(KV).save(kv);
+    // log('put', kv);
+    await manager.upsert(
+      KV,
+      {
+        key: key.toString(),
+        value: uint8array_to_b64pad(val),
+        name: key.name(),
+        prefix: `/${namespaces.slice(0, namespaces.length - 1).join('/')}`,
+      },
+      ['key'],
+    );
+    return key;
   }
   async function get(key: Key, options?: Options) {
-    const v = await connection.manager.findOne(KV, {
-      key: key.toString(),
+    const v = await manager.findOne(KV, {
+      where: {
+        key: key.toString(),
+      },
     });
     if (v) {
       return b64pad_to_uint8array(v.value);
@@ -43,26 +52,20 @@ const createDataStore = (connection: Connection): Datastore => {
     return new Uint8Array();
   }
   async function del(key: Key, options?: Options) {
-    const repo = connection.getRepository(KV);
     log('delete', key.toString());
-    const v = await repo.findOne({ key: key.toString() });
+    const v = await manager.findOne(KV, { where: { key: key.toString() } });
     if (v) {
-      await repo.remove(v);
+      await manager.remove(v);
     }
   }
   return {
-    async open() {},
-
-    async close() {},
-
     put,
 
     get,
 
     async has(key: Key, options?: Options) {
-      const v = await connection
-        .getRepository(KV)
-        .findOne({ key: key.toString() });
+      const v = await manager
+        .findOne(KV, { where: { key: key.toString() } });
       return !!v;
     },
 
@@ -92,7 +95,7 @@ const createDataStore = (connection: Connection): Datastore => {
       let offset = 0;
       while (true) {
         const f = (
-          await connection.getRepository(KV).find({
+          await manager.find(KV, {
             where: { prefix: q.prefix },
             skip: offset,
             take: 1,

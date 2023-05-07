@@ -44,7 +44,7 @@ import {
   DBConference,
   DBConferenceSolutionPair,
   DBDomainProposalPair,
-  DBProposal,
+  IProposalStore,
   DBSolution,
   DBTask,
   DomainEntity,
@@ -59,7 +59,7 @@ import DomainPicker from './DomainPicker';
 import { ExtendedDomain } from './types';
 import NewTaskDialog from './NewTaskDialog';
 const Proposal = ({ id }: { id: string }) => {
-  const [proposal, set_proposal] = useState<DBProposal>(undefined);
+  const [proposal, set_proposal] = useState<IProposalStore>(undefined);
   const [new_solution, set_new_solution] = useState<{
     show: boolean;
     content: string;

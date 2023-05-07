@@ -1,38 +1,11 @@
 import { IPFSAddress,NodeID  } from './common';
+import { ProposalContent, SolutionContent } from './database';
 
 export type ProposalID = string;
 export type SolutionID = string;
 export type VITaskID = string;
 export type DomainID = string;
 export type ConferenceID = string;
-
-export type ActionSubject = NodeID;
-export type ActionSubjects = ActionSubject[];
-export type Actions = Action[];
-export type ActionBundle = Actions[];
-export type ActionsTestimony = {
-  before_prev_block_hash: IPFSAddress;
-  start_timestamp: number; // current block
-  actions: Actions;
-  node_id: NodeID;
-};
-
-export enum ConsensusEvent {
-  tasks_before_executed = 'tasks_before_execute',
-  proposals_before_activated = 'proposals_before_activated',
-  proposal_status_changed = 'proposal_status_changed',
-  after_apply_actions = 'after_apply_actions',
-}
-
-export type BlockContext = {
-  epoch: number;
-  block_hash: IPFSAddress;
-  prev_block_hash: IPFSAddress;
-  n_tries: number;
-  actions: Actions;
-  action_bundle: ActionBundle;
-  action_bundle_cid: IPFSAddress;
-};
 
 export enum ConferenceStatus {
   invalid,
@@ -52,7 +25,7 @@ export enum ProposalStatus {
 }
 
 export enum VITaskType {
-  SelfUpgrade = 1,
+  Upgrade = 1,
   DomainAdd,
   DomainMerge,
   DomainModify,
@@ -66,26 +39,26 @@ export type VITaskBasic = {
 };
 export type VIRevokeProposal = VITaskBasic & {
   type: VITaskType.RevokeProposal;
-  proposal_id: ProposalID;
+  proposal_uuid: ProposalID;
 };
 export type VISelfUpgrade = VITaskBasic & {
-  type: VITaskType.SelfUpgrade;
+  type: VITaskType.Upgrade;
   script: string;
 };
 export type VIDomainMerge = VITaskBasic & {
   type: VITaskType.DomainMerge;
-  domain_id: DomainID;
-  target_domain_id: DomainID;
+  domain_uuid: DomainID;
+  target_domain_uuid: DomainID;
 };
 export type VIDomainAdd = VITaskBasic & {
   type: VITaskType.DomainAdd;
   name: string;
   supported_types: VITaskType[]; // 领域下支持的任务类型
-  parent_domain_id?: DomainID; // 为空表示顶级领域
+  parent_domain_uuid?: DomainID; // 为空表示顶级领域
 };
 export type VIDomainModify = VITaskBasic & {
   type: VITaskType.DomainModify;
-  domain_id: DomainID;
+  domain_uuid: DomainID;
   name?: string;
   supported_types?: VITaskType[]; // 领域下支持的任务类型
 };
@@ -112,7 +85,7 @@ export type VITask =
   | VIAssignToEntity;
 
 export type CommonSolution = {
-  content_cid: IPFSAddress;
+  content_cid: IPFSAddress<SolutionContent>;
   tasks: VITask[];
 };
 
@@ -123,12 +96,12 @@ export type ProposalProperties = {
 
 export type CommonProposal = {
   title: string;
-  content_cid: IPFSAddress;
+  content_cid: IPFSAddress<ProposalContent>;
   default_solution: CommonSolution;
   properties: ProposalProperties;
-  domain_ids: DomainID[];
+  domain_uuids: DomainID[];
 };
-export type Comment = { mid: NodeID; content_cid: IPFSAddress };
+export type Comment = { mid: NodeID; content_cid: IPFSAddress<string> };
 export type Votes = Set<NodeID>;
 export enum PeerStatus {
   active,
@@ -146,7 +119,6 @@ export enum ActionType {
   CommitSolution,
   Comment,
   VoteSolution,
-  WithdrawVoting,
   Quit,
   SetProposalProperties,
   ModifyProfile,
@@ -154,12 +126,6 @@ export enum ActionType {
   FreezeProposal = 1000,
 }
 
-export type ActionWithdrawVoting = {
-  type: ActionType.WithdrawVoting;
-  proposal_id: ProposalID;
-  conference_id: ConferenceID;
-  solution_id: SolutionID;
-};
 export type ActionMakeProposal = {
   type: ActionType.MakeProposal;
   proposal: CommonProposal;
@@ -167,44 +133,62 @@ export type ActionMakeProposal = {
 // 参与议题 -> 对方案投票
 export type ActionVoteSolution = {
   type: ActionType.VoteSolution;
-  proposal_id: ProposalID;
-  solution_id: SolutionID;
-  conference_id: ConferenceID;
+  proposal_uuid: ProposalID;
+  solution_uuid: SolutionID;
+  conference_uuid: ConferenceID;
 };
 // 参与议题 -> 提出方案
 export type ActionCommitSolution = {
   type: ActionType.CommitSolution;
-  proposal_id: ProposalID;
+  proposal_uuid: ProposalID;
   solution: CommonSolution;
 };
 export type ActionFreezeProposal = {
   type: ActionType.FreezeProposal;
-  proposal_id: ProposalID;
-  content_cid: IPFSAddress;
+  proposal_uuid: ProposalID;
+  content_cid: IPFSAddress<string>;
 };
 // 参与议题 -> 评论方案
 export type ActionComment = {
   type: ActionType.Comment;
-  proposal_id: ProposalID;
-  solution_id?: SolutionID;
-  content_cid: IPFSAddress;
+  proposal_uuid: ProposalID;
+  solution_uuid?: SolutionID;
+  content_cid: IPFSAddress<string>;
 };
 export type ActionQuit = {
   type: ActionType.Quit;
 };
 export type ActionSetProposalProperties = {
   type: ActionType.SetProposalProperties;
-  proposal_id: ProposalID;
+  proposal_uuid: ProposalID;
   properties: Partial<ProposalProperties>;
 };
 
 export type ModifiableProfile = {
-  proof_cid?: IPFSAddress; // 详细档案和证明
+  proof_cid?: IPFSAddress<string>; // 详细档案和证明
 };
+
+export enum RBCProtocolStage {
+  RBC_READY = 'RBC_READY',
+  RBC_ECHO = 'RBC_ECHO',
+  RBC_VAL = 'RBC_VAL',
+}
+export enum ABAProtocolStage {
+  ABA_PREVOTE = 'ABA_PREVOTE',
+  ABA_VOTE = 'ABA_VOTE',
+  ABA_MAINVOTE = 'ABA_MAINVOTE',
+  ABA_FINALVOTE = 'ABA_FINALVOTE',
+  ABA_DECIDED = 'ABA_DECIDED',
+}
+
+export type RBCProtocols = keyof typeof RBCProtocolStage;
+export type ABAProtocols = keyof typeof ABAProtocolStage;
+export type SubProtocols = RBCProtocols | ABAProtocols;
+
 export type Profile = {
   public_key: string;
   name: string;
-  proof_cid: IPFSAddress; // 详细档案和证明
+  proof_cid: IPFSAddress<string>; // 详细档案和证明
 };
 export type ActionModifyProfile = {
   type: ActionType.ModifyProfile;
@@ -218,7 +202,6 @@ export type ActionInitialAction = {
 
 export type Action =
   | ActionInitialAction
-  | ActionWithdrawVoting
   | ActionModifyProfile
   | ActionFreezeProposal
   | ActionComment
@@ -227,3 +210,6 @@ export type Action =
   | ActionMakeProposal
   | ActionVoteSolution
   | ActionCommitSolution;
+
+export type Actions = Action[];
+export type MassActions = { node_id: NodeID; actions: Actions }[];

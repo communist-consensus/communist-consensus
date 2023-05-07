@@ -1,11 +1,12 @@
 import { Entity, PrimaryColumn, PrimaryGeneratedColumn, Column, Index, Unique } from 'typeorm';
 import { ID_LENGTH, URL_MAX_LENGTH } from '../../../../shared/constant';
-import { DBBlock, DBABALog, DBABAPrevote, IPFSAddress  } from '../../../../shared/types';
+import { DBBlock, DBABAInfo, ABAProtocolStage, ABAValue, IPFSAddress } from '../../../../shared/types';
 import { bigint } from '../transformer';
 
 @Entity()
-@Unique(['root_block_cid', 'epoch', 'session_id', 'round', 'sender', 'val'])
-export default class ABAPrevote implements DBABAPrevote {
+@Index(['stage'])
+@Unique(['root_block_cid', 'epoch', 'session_id'])
+export default class ABAInfo implements DBABAInfo {
   @PrimaryGeneratedColumn('uuid')
   uuid: string;
 
@@ -13,20 +14,19 @@ export default class ABAPrevote implements DBABAPrevote {
   epoch: number;
 
   @Column('varchar', { length: ID_LENGTH })
-  session_id: string;
+  root_block_cid: IPFSAddress<DBBlock>;
 
   @Column('varchar', { length: ID_LENGTH })
-  root_block_cid: IPFSAddress<DBBlock>;
+  session_id: string;
 
   @Column('int')
   round: number;
 
-  @Column('varchar', { length: ID_LENGTH })
-  sender: string;
+  @Column({
+    type: 'varchar', length: 40,
+  })
+  stage: ABAProtocolStage;
 
   @Column('int')
-  val: number;
-
-  @Column('blob')
-  signature: Buffer;
+  val: ABAValue;
 }

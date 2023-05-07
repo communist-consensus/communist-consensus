@@ -16,14 +16,14 @@ import { ProposalStatus, IPFSAddress } from '../../../../shared/types';
 import Proposal from './proposal';
 
 @Entity()
-@Index(['solution_id', 'task_id'], { unique: true })
+@Index(['solution_uuid', 'task_uuid'], { unique: true })
 export default class SolutionTaskPair {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: number;
 
   @Column('varchar', { length: ID_LENGTH })
-  solution_id: string;
+  solution_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  task_id: string;
+  task_uuid: string;
 }

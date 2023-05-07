@@ -1,9 +1,53 @@
-# Communist Consensus decentralized decision-making automation
-# Communist Consensus 去中心化决策系统
+## Communist Consensus 共识协议
+
+用一句话概括 Communist Consensus 共识协议的核心思想——少数服从多数。
+
+而在互联网中实现“少数服从多数”是不容易的，它的基本要求是：
+- 数字身份与现实身份的绑定
+    - 这是保证参与者一人一票的基础
+    - 参与者之间可互相检验真伪
+- 信息存储与处理的公平
+    - 为了保证数据的一致性以及数据处理（如投票统计）的正确性，计算节点和存储节点需要去中心化，每位参与者都参与计算和存储
+- 信息传输的公平
+    - 为了保证信息传输不会被恶意针对（限速、推迟或者丢弃），需要实现路由的去中心化，节点之间使用动态路由建立点对点连接
+- 协议应具有一定的抗干扰和抗攻击能力，可容忍一部分恶意参与者
+- 协议允许一部分的参与者离线，并且可以上线后恢复共识数据
+
+Communist Consensus 共识协议除了制定满足以上基本要求的底层技术实现规范，还有上层的议题管理规范，其内容包括：
+- 议题的基本属性
+- 议题的分类机制
+- 议题的生命周期
+- 投票机制
+- 议题的执行器/智能合约
+议题管理规范保证了在安全的前提下参与者高效地对感兴趣的议题做出决策，尤其是当参与者数量或者议题数量较多时。这里指的安全是：避免错过对全局造成影响的重要议题；避免未经过充分讨论的议题被执行；
+
+### 共识的结果
+
+共识的结果是一组操作记录，即每位遵循协议的参与者存储（和处理）的所有参与者的操作记录是一致的，其中操作记录包括：
+- 发起新的议题
+- 对议题投票，评论等
+
+这组操作记录的证明是由多数参与者的数字签名组成。
+
+另外，可以在议题中设置智能合约使议题可执行，使它在一定条件下自动触发，智能合约的功能包括不限于：
+- 管理参与者的加入和退出
+- 修改共识协议本身的代码
+
+## 学术风格的描述
+
+这是一个支持动态节点的异步拜占庭容错的共识协议；这是一个支持动态节点的异步拜占庭容错的强一致性写入读取最终一致性读取的分布式协议；这是一个无代币的 Proof of Authority/People 的类区块链协议；
+
+其中动态节点不仅意味着共识的参与者名单是动态的，在每一轮决策后可能产生新的参与者或者让曾经的参与者退出，在路由上也是动态的，节点的连接地址可能发生变化。
+异步即异步网络，在异步网络中的消息的不保证在有限的时间内到达，互联网是典型的异步网络。
+拜占庭容错，可容忍一定比例的恶意参与者，恶意参与者可以不遵循共识协议，干扰其他正常参与者。
+
+# Communist Consensus
+
+A decentralized decision-making protocol.
 
 NOTE: This implementation is unstable and may contain security issues.
 
-Communist Consensus decentralized decision-making automation is an cross-platform application based on public accessible permissioned blockchain (Proof of Authority) powered by Libp2p, Asynchronous BFT (Byzantine Fault Tolerance), Practical Asynchronous Distributed Key Generation and IPFS.
+Communist Consensus decentralized decision-making protocol is based on public accessible permissioned blockchain (Proof of Authority) powered by Libp2p, Asynchronous Byzantine Fault Tolerance and IPFS.
 
 ## Preview
 ![image (1)](https://user-images.githubusercontent.com/11901882/185803003-dae1640c-ddd4-444d-a21e-21fd519ebba9.png)
@@ -23,12 +67,11 @@ Communist Consensus decentralized decision-making automation is an cross-platfor
 * Not dependent on existing public blockchain
 * No temporary leader / committee during consensus process to avoid biases on critical decisions
 * Nodes have equal weights
-* 允许少数节点掉线
 
 ### Scalibility
 
-* Upgrade itself(anything) by decision-making process
-* Dynamic nodes
+* Protocols support self-upgrade by decision-making process (human in the loop)
+* Dynamic total nodes n after each epoch
 
 ### Threat model
 * Completely asynchronous network, meaning that no assumptions are made regarding the delivery schedule of messages by the network.
@@ -36,11 +79,7 @@ Communist Consensus decentralized decision-making automation is an cross-platfor
 * Static corruptions
 * The adversary can selectively delay, refuse messages and selectively mislead others. But they cannot forge signatures, generate message for a specific hash.
 * The network will not drop any values from honest nodes.
-
-### Security
-
-* Tolerate at most 1 / 3 byzantine nodes
-* Quantum safety and Quantum liveness
+* At most 1 / 3 byzantine nodes
 
 ## Implementation
 
@@ -89,9 +128,26 @@ dkss
 dz
     pace
 
-多种 Asynchronous BFT 方案的对比
+| name | async | dynmaic nodes | not rely on trusted setup | adaptive security |
+| --- | --- | --- | --- | --- |
+| PBFT | 0 | 0 | 1 | 0 |
+| HotStuff | 0 | 0 | 1 | 0 |
+| Zzyzx | 0 | 0 | 1 | 0 |
+| DAG-Rider | 1 | 0 | 0 | 0 |
+| Tusk| 1 | 0 | 0 | 0 |
+| Bullshark| 1 | 0 | 0 | 0 |
+| SodsBC| 1 | 0 | 0 | 0 |
+| PACE| 1 | 0 | 0 | 0 |
+| RITAS| 1 | 0 | 0 | 1 |
+| BEAT | 1 | 0 | 0 | 0 |
+| WaterBear family | 1 | 0 | 1 | 1 |
+| HoneyBadger | 1 | 1 | 0 | 0 |
+| Dumbo family | 1 | 0 | 0 | 0 |
+| EPIC | 1 | 0 | 1 | 1 |
+| Communist Consensus BFT | 1 | 1 | 1 | 1 |
 
-我们使用 Practical ADKG 与 DumboBFT 以满足我们的设计目标。
+各种 BFT 方案的对比
+
 
 ## Papers
 
@@ -107,57 +163,39 @@ Aggregatable Distributed Key Generation
 Dumbo NG
 Speeding Dumbo
 
-## 民主决策过程
+information-theoretic security
+quantum security，
+computational security，例如非对称加密
+
+PBFT: quantum security, partially synchronous BFT
+
+liveness: 
+static security: 攻击者在协议开始时就选择要攻击的对象
+adaptive security:
+
+weak common coin: 1/d的概率所有节点同时输出0或1,d>2
+perfect common coin: 1/2的概率所有节点同时输出0或1
+
+## 议题管理规范
 ![image](https://user-images.githubusercontent.com/11901882/185021696-b48ccff1-3b28-48cc-ac47-2377bf8e7476.png)
 
-关于议题的产生与执行如图所示。议题的生命周期分为四个阶段：发起议题或参与议题，（子）会议内讨论与投票，公示阶段，执行阶段。在发起议题后，议题进入所属议题域的等待队列中。议题按照不同领域分类，每个议题域中参与者最多的议题将被激活进入会议流程。议题域的变更由相应议题和相应的智能合约实现。
+议题的生命周期分为四个阶段：发起议题或参与议题，（子）会议内讨论与投票，公示阶段，执行阶段。在发起议题后，议题进入所属议题域的等待队列中。议题按照不同领域分类，每个议题域中参与者最多的议题将被激活进入会议流程。议题域的变更由相应议题和相应的智能合约实现。
 
-成员可以在公示以前任何阶段参与议题。参与议题时需要提供期望的会议时间窗口、期望公示时间窗口，通过这些期望时间的平均值得出截止时间。另外还需要提供期望子会议容量，会议人数如果超过平均期望会议容量，将拆分为若干个子会议。这些子会议中在选出胜出的方案后进入新的一轮讨论与投票，如果候选方案胜出者仍然超过平均期望会议容量，将再次拆分，如此反复直到选出最终方案。
+参与者可以在公示以前参与议题。参与议题时需要提供期望的会议时间窗口、期望公示时间窗口，通过这些期望时间的平均值得出截止时间。另外还需要提供期望子会议容量，会议人数如果超过平均期望会议容量，将拆分为若干个子会议。这些子会议中在选出胜出的方案后进入新的一轮讨论与投票，如果候选方案胜出者仍然超过平均期望会议容量，将再次拆分，如此反复直到选出最终方案。
 
-在（子）会议截止前，投票人可对多个方案进行投票，票数最多的方案胜出。最后一轮投票胜出的方案在公示期后由智能合约执行，取代传统的执行机制和监督机制。即成员只有发言权和表决权，无执行权。智能合约是唯一的且执法者或执行者，保证议题在执行阶段的公平和效率。
+在（子）会议截止前，投票人可对多个方案进行投票，票数最多的方案胜出。最后一轮投票胜出的方案在公示期后由智能合约执行。
 
 为防止具有破坏性的议题的执行，采用以下策略：
 
 （1） 最小公示期与最终方案支持者人数占总人数的比例成反比，以此增加领域专家参与会议的概率。
 
-（2） 成员可以对可疑人员提出质疑，如果议题通过，可疑人员将从组织中移除。
+（2） 参与者可以对可疑人员提出质疑，如果议题通过，可疑人员将从组织中移除。
 
-（3） 冷静机制：成员可以在公示期冻结议题，同时该成员也进入冻结状态。等待其他成员的评估，解除冻结或取消议题。
+（3） 冷静机制：参与者可以在公示期冻结议题，同时该参与者也进入冻结状态。等待其他参与者的评估，解除冻结或取消议题。
 
 在一些无法直接应用智能合约的场景，仍然需要选举出执行代表，选举过程与提案过程相同。并应遵循此原则：任何过程尽可能使用民主决策，如果暂时无法实现，必须给出具体条件，当满足条件的时候立即转换为民主决策（此规则也可使用智能合约编写）。
 
-## Applications
+## TODO
 
-### Decentralized Internet Platform With Privacy Computing
-
-通过在多个不同云服务供应商中分别构造一个仅接受来自去中心化决策系统决策结果的指令的集群，集群之间使用阈值加密技术存储敏感信息，对外提供可验证的具有隐私保护的互联网服务。
-
-每个集群创建过程如下：
-
-1. 通过去中心化决策制定 Docker 初始化文件 DockerFile 或者类似的初始化脚本，并选举出管理员。
-2. 管理员创建云服务器供应商的主帐号和仅有只读权限的副帐号（可查询主帐号所有操作记录）。
-3. 管理员通过 DockerFile/初始化脚本 或者对应的镜像文件创建云服务器实例。
-4. 实例在初始化时将关闭所有登录方式（此功能写在 DockerFile/初始化脚本 中），仅监听去中心化决策系统产生的决策结果并执行相应指令。
-
-其中副账号的账号及密码向社会公开，任何人可检查云服务器是否按照规定的方式初始化，并且可访问主帐号的全部操作记录。拥有主帐号权限的管理员，除停止服务以外无其他特权。除了云服务供应商的任何人无法登录该服务器获取其中的数据或写入数据，云服务供应商即使拥有数据的读写权限，也无法修改或从阈值加密的数据中读取出有意义的信息（除非多数不同的云服务供应商联合并篡改其中的数据）。服务器在初始化以后的执行指令由去中心化的民主决策产生。
-
-## 开发进度
-
-[90%] libp2p
-
-[80%] frontend
-
-[] implement Asynchronous BFT
-
-[] implement Asynchronous DKG
-
-恢复机制
-
-当收到过时的ecrbc消息，且ecrbc[i]已结束，返回它的证明
-当收到过时的aba消息，且aba[i]已结束，返回它的证明
-
-当ecrbc_results.length <= n-f 超过一段时间，重新广播ecrbc中未完成的当前阶段下的广播
-当ecrbc_results.length > n-f && aba_results.length <= n-f 超过一段时间，重新广播aba中未完成的当前阶段下的广播
-
-缓存机制
-    缓存当前epoch和下一个epoch的ecrbc/aba消息（但不转发），消息的发送者在白名单内
+* TLA+ liveness proof and safety proof
+* TLPS correctness proof

@@ -38,7 +38,7 @@ import {
   CommonProposal,
   CommonSolution,
   DBDomainProposalPair,
-  DBProposal,
+  IProposalStore,
   DBSolution,
   DBTask,
   DomainEntity,

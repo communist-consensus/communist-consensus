@@ -15,15 +15,15 @@ import { ID_LENGTH } from '../../../../shared/constant';
 
 @Entity()
 export default class ProposalComment {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: number;
 
   @Column('varchar', { length: ID_LENGTH })
-  content_cid: IPFSAddress;
+  content_cid: IPFSAddress<string>;
 
   @Column('varchar', { length: ID_LENGTH })
-  proposal_id: string;
+  proposal_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  peer_id: string;
+  peer_uuid: string;
 }

@@ -13,11 +13,7 @@
     "moduleResolution": "node",
     "outDir": "libs",
     "jsx": "preserve",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "strict": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
@@ -27,14 +23,6 @@
   "ts-node": {
     "esm": true
   },
-  "include": [
-    "./src/**/*",
-    "./test/**/*",
-    "shared",
-    "pages",
-    "components"
-, "legacy/Members.tsx", "legacy/Members.tsx", "legacy/NewProposalDialog.tsx", "legacy/NewTaskDialog.tsx", "legacy/Orders.tsx", "legacy/PeerPicker.tsx", "legacy/Proposal.tsx", "legacy/Publicity.tsx", "legacy/Solution.tsx", "legacy/Title.tsx", "legacy/types.ts", "legacy/utils.ts", "legacy/WindowTimePicker.tsx", "legacy/constant.ts", "legacy/constant.ts", "legacy/Dashboard.tsx", "legacy/DomainPicker.tsx", "legacy/Domains.tsx", "legacy/DomainsStack.tsx", "legacy/global.d.ts"  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["./src/**/*", "./test/**/*", "shared", "pages", "components"],
+  "exclude": ["node_modules"]
 }

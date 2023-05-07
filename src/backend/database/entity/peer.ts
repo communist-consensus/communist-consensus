@@ -5,7 +5,10 @@ import { DBPeer, PeerStatus } from '../../../../shared/types';
 @Entity()
 export default class Peer implements DBPeer {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  id: string;
+  uuid: string;
+
+  @Column('int')
+  index: number;
 
   @Column('varchar', { length: ID_LENGTH })
   name: string;

@@ -5,6 +5,8 @@ const config: ConsensusConfig = {
   public_key: 'CAESIBpxzd731kfjRSJ8ZwxtVTLlU6v3VTuXpXJup3U/ajh5',
   private_key:
     'CAESQO5ReO6YU7tQSB6n0b8Njv8q1Xnd3zNMqvXQkOfaO5P/GnHN3vfWR+NFInxnDG1VMuVTq/dVO5elcm6ndT9qOHk=',
+  name: 'b',
+  proof_cid: '',
 };
 
 export default config;

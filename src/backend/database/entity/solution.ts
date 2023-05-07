@@ -9,7 +9,7 @@ import {
   JoinColumn,
   ManyToMany,
 } from 'typeorm';
-import { DBSolution, IPFSAddress } from '../../../../shared/types';
+import { DBSolution, IPFSAddress, SolutionContent } from '../../../../shared/types';
 import Conference from './conference';
 import Proposal from './proposal';
 import Task from './task';
@@ -19,11 +19,11 @@ import { ID_LENGTH } from '../../../../shared/constant';
 @Entity()
 export default class Solution implements DBSolution {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  id: string;
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  peer_id: string;
+  peer_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  content_cid: IPFSAddress;
+  content_cid: IPFSAddress<SolutionContent>;
 }

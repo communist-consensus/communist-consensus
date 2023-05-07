@@ -57,3 +57,6 @@ graph TD;
 * 在一个状态下超时后，再次广播该状态
 
 * 当收到过期的消息（距离大于1），返回当时广播的消息
+
+### 潜在威胁
+* 通过广播finalvote-any或mainvote-any或vote-any 干扰final vote output。解决方案：每阶段的广播需要携带证明

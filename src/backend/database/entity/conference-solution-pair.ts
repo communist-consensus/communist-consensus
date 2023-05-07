@@ -21,18 +21,18 @@ import { bigint } from '../transformer';
 import Proposal from './proposal';
 
 @Entity()
-@Index(['solution_id', 'round_id'], { unique: true })
-@Index(['solution_id', 'conference_id'], { unique: true })
+@Index(['solution_uuid', 'round_id'], { unique: true })
+@Index(['solution_uuid', 'conference_uuid'], { unique: true })
 export default class ConferenceSolutionPair
   implements DBConferenceSolutionPair {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: number;
 
   @Column('varchar', { length: ID_LENGTH })
-  solution_id: string;
+  solution_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  conference_id: string;
+  conference_uuid: string;
 
   @Column('bigint', { transformer: [bigint] })
   round_id: number;

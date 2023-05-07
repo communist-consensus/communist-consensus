@@ -17,13 +17,13 @@ import { bigint } from '../transformer';
 import Proposal from './proposal';
 
 @Entity()
-@Index(['proposal_id', 'round_id'], { unique: true })
+@Index(['proposal_uuid', 'round_id'], { unique: true })
 export default class ProposalRoundPair {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  proposal_id: string;
+  proposal_uuid: string;
 
   @Column('bigint')
   round_id: number;

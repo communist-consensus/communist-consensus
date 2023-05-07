@@ -9,7 +9,7 @@ import {
   DBConferenceSolutionPair,
   DBDomainProposalPair,
   DBPeer,
-  DBProposal,
+  IProposalStore,
   DBSolution,
   DomainEntity,
   DomainID,
@@ -170,7 +170,7 @@ export async function get_proposals(domain_id: DomainID, page: number) {
 }
 
 export async function get_proposal(domain_id: DomainID) {
-  return await request<{}, { proposal: DBProposal }>(
+  return await request<{}, { proposal: IProposalStore }>(
     `${url_prefix}/proposal/${domain_id}`,
   );
 }

@@ -1,4 +1,5 @@
 import sha from 'multihashing-async/src/sha.js';
+import * as Digest from 'multiformats/hashes/digest'
 import { createPeerId, peerIdFromKeys } from '@libp2p/peer-id';
 import { createEd25519PeerId, createFromJSON } from '@libp2p/peer-id-factory';
 import { identity } from 'multiformats/hashes/identity';
@@ -9,6 +10,9 @@ import {
   PublicKey,
   PrivateKey,
   ConsensusConfig,
+  MassActions,
+  IPFSAddress,
+  DBBlock,
 } from '../types';
 import { CID } from 'multiformats/cid'
 import * as Block from 'multiformats/block'
@@ -33,8 +37,12 @@ export async function verify_cid(bytes: Uint8Array, cid: string) {
 export async function get_block<T>(obj: T) {
   return (await Block.encode({ value: obj, codec, hasher }));
 }
-export async function get_cid<T>(obj: T) {
+export async function get_cid_str<T>(obj: T) {
   return (await Block.encode({ value: obj, codec, hasher })).cid.toString();
+}
+
+export async function get_cid<T>(obj: T) {
+  return (await Block.encode({ value: obj, codec, hasher })).cid;
 }
 
 export async function encode<T>(obj: T) {
@@ -45,8 +53,9 @@ export async function decode<T>(bytes) {
   return (await Block.decode({ bytes: bytes, codec, hasher })).value as T;
 }
 
-export async function pubkey_to_mid(pubkey: Uint8Array) {
-  return uint8array_to_b58(await sha.multihashing(pubkey, 'sha2-256'));
+export async function pubkey_to_node_id(pubkey: Uint8Array) {
+  return await uint8array_to_b58(Digest.create(0, pubkey).bytes);
+  // return uint8array_to_b58(await sha.multihashing(pubkey, 'sha2-256'));
 }
 
 export function b64pad_to_uint8array(str) {
@@ -128,6 +137,16 @@ export function shuffle<T>(a: T[], seed?: number) {
     [a[i - 1], a[j]] = [a[j], a[i - 1]];
   }
   return a;
+}
+
+export function shuffle_by_string<T>(
+  a: T[],
+  seed: string,
+) {
+  return shuffle(
+    a,
+    Array.from(seed).reduce((total, i) => i.charCodeAt(0) + total, 0),
+  );
 }
 
 export function sort_n_array(

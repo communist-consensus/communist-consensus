@@ -1,7 +1,7 @@
 import assert from 'assert';
 
-describe('content-deliverer', function() {
-  it('content-deliverer', async function() {
+describe('dht-helper', function() {
+  it('content provide and get', async function() {
     /*
     const ipfs = await IPFS.create();
     let res;

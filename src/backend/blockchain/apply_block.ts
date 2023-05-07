@@ -1,32 +1,26 @@
 import { MIN_ONLINE_RATE } from '../../../shared/constant';
 import crypto from 'libp2p-crypto';
+import * as block_store from '../database/block';
+import * as aba_store from '../database/aba';
+import * as rbc_store from '../database/rbc';
 import {
-  ActionBundle,
-  ActionSubjects,
-  BlockchainBlock,
+  ABAProof,
+  ABAProtocolStage,
+  ABAValue,
   Context,
+  DBBlock,
   IPFSAddress,
-  Witnesses,
-  WitnessSignature,
-  WitnessSignatures,
-  WitnessTestimony,
+  RBCProof,
+  RBCProtocolStage,
 } from '../../../shared/types';
-import {
-  decode,
-  encode,
-  b64pad_to_uint8array,
-  RSA_verify,
-} from '../../../shared/utils';
+import { decode, encode, b64pad_to_uint8array } from '../../../shared/utils';
 import apply_actions from './apply_actions';
+import { sub_transation } from '../database/utils';
+import RBCReady from '../database/entity/rbc-ready';
+import { RBCReadyMessage } from '../types';
 
-export async function verify_block(
-  ctx: Context,
-  block: BlockchainBlock,
-  witness_signatures_cid: IPFSAddress,
-  witnesses_cid: IPFSAddress,
-  witness_testimony_cid: IPFSAddress,
-  witness_testimony: WitnessTestimony,
-) {
+export async function verify_block(ctx: Context) {
+  /*
   const { prev_block_hash, action_bundle_cid, n_peer: n_peer } = block;
   const witness_signature_cids = await ctx.ipfs.get<IPFSAddress[]>(
     witness_signatures_cid,
@@ -87,29 +81,60 @@ export async function verify_block(
       return false;
     }
   }
+  */
   return true;
 }
 
-export async function apply_block(ctx: Context, block: BlockchainBlock) {
-  const {
-    prev_block_hash,
-    action_bundle_cid,
-    action_subjects_cid,
-    actions_broadcast_window_start,
-    witness_broadcast_window_end,
-  } = block;
-
-  const action_bundle = await ctx.ipfs.get<ActionBundle>(action_bundle_cid);
-  const action_subjects = await ctx.ipfs.get<ActionSubjects>(
-    action_subjects_cid,
-  );
-
-  await apply_actions(
-    ctx,
-    action_bundle,
-    action_subjects,
-    actions_broadcast_window_start,
-    witness_broadcast_window_end,
-    prev_block_hash,
-  );
+export async function apply_block(
+  ctx: Context,
+  block: DBBlock,
+  rbc_proofs: RBCProof[],
+  aba_proofs: ABAProof[],
+) {
+  await sub_transation(ctx.datasource.options, async (manager) => {
+    await block_store.add_block(manager, block);
+    for (const i of rbc_proofs) {
+      for (const j of i.signatures) {
+        const rbc_ready_msg: RBCReadyMessage = {
+          epoch: block.epoch,
+          stage: RBCProtocolStage.RBC_READY,
+          root_block_cid: ctx.root_block_cid,
+          sender: j.signatory,
+          provider: i.node_id,
+          cid: i.cid,
+        }
+        await rbc_store.set_ready(
+          manager,
+          rbc_ready_msg,
+          Buffer.from(j.signature),
+        );
+      }
+      await rbc_store.set_resolved(manager, ctx.root_block_cid, block.epoch, i.node_id, i.cid);
+    }
+    for (const i of aba_proofs) {
+      await aba_store.set_current_info(manager, {
+        root_block_cid: ctx.root_block_cid,
+        epoch: block.epoch,
+        session_id: i.node_id,
+        round: i.round,
+        stage: ABAProtocolStage.ABA_DECIDED,
+        val: i.val ? ABAValue.true : ABAValue.false,
+      });
+      for (const j of i.signatures) {
+        await aba_store.set_final_vote(
+          manager,
+          {
+            root_block_cid: ctx.root_block_cid,
+            epoch: block.epoch,
+            sender: j.signatory,
+            round: i.round,
+            session_id: i.node_id,
+            val: i.val ? ABAValue.true : ABAValue.false,
+            stage: ABAProtocolStage.ABA_FINALVOTE,
+          },
+          j.signature,
+        );
+      }
+    }
+  });
 }

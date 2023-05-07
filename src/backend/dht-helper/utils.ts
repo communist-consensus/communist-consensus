@@ -123,7 +123,7 @@ export function compute_n_replica(options: {
 }
 
 export async function forceGetConnection(ctx: Context, target: PeerId) {
-  const known_addrs = await ctx.libp2p_node.peerStore.addressBook.get(target);
+  const known_addrs = (await ctx.libp2p_node.peerStore.get(target)).addresses;
   const addrs: Multiaddr[] = [];
   if (known_addrs && known_addrs.length) {
     ctx.log('forceGetConnection', 'knownAddr');

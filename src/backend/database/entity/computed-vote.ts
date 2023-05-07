@@ -15,13 +15,13 @@ import Peer from './peer';
 import Solution from './solution';
 
 @Entity()
-@Index(['solution_id', 'conference_id'], { unique: true })
+@Index(['solution_uuid', 'conference_id'], { unique: true })
 export default class ComputedVote {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  solution_id: string;
+  solution_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
   conference_id: string;

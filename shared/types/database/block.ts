@@ -1,20 +1,29 @@
-import { BlockContext } from '../consensus';
-import { IPFSAddress } from '../common';
+import { EntityManager } from 'typeorm';
+import { IPFSAddress, NodeID } from '../common';
+import { ABAProof } from './aba';
+import { MassActions } from '../consensus';
+import { RBCProof } from './rbc';
 
-export interface IDBBlock {
-  get_block: (block_hash: IPFSAddress) => Promise<DBBlock>;
-  get_blocks: () => Promise<DBBlock[]>;
-  get_n_block: () => Promise<number>;
-  get_root_block: () => Promise<DBBlock>;
-  get_next_block: (block_hash: IPFSAddress) => Promise<DBBlock>;
-  get_latest_block: () => Promise<DBBlock>;
-
-  add_block: (block_ctx: BlockContext) => Promise<void>;
-}
 export type DBBlock = {
-  block_hash: string;
-  prev_block_hash: IPFSAddress;
-  ecrbc_proofs: IPFSAddress;
-  aba_proofs: IPFSAddress;
+  /**
+   * block_cid computed by hash(actions)
+   */
+  block_cid: IPFSAddress<DBBlock>;
+  prev_block_cid: IPFSAddress<DBBlock>;
   epoch: number;
+
+  start_timestamp: number;
+
+  /**
+   * only whose aba proof output 1 will be involved
+   */
+  mass_actions: IPFSAddress<MassActions>;
+
+  /**
+   * warning: signatories of proofs may vary, so its IPFSAddress may vary
+   * 
+   * proofs order by node id (asc)
+   */
+  rbc_proofs: IPFSAddress<RBCProof[]>;
+  aba_proofs: IPFSAddress<ABAProof[]>;
 };

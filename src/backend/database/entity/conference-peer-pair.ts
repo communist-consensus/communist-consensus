@@ -17,22 +17,22 @@ import { bigint } from '../transformer';
 import Proposal from './proposal';
 
 @Entity()
-@Index(['peer_id', 'conference_id', 'proposal_id', 'round_id'], {
+@Index(['peer_uuid', 'conference_uuid', 'proposal_uuid', 'round_id'], {
   unique: true,
 })
-@Index(['peer_id', 'proposal_id', 'round_id'], { unique: true })
+@Index(['peer_uuid', 'proposal_uuid', 'round_id'], { unique: true })
 export default class ConferencePeerPair {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: number;
 
   @Column('varchar', { length: ID_LENGTH })
-  peer_id: string;
+  peer_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  conference_id: string;
+  conference_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  proposal_id: string;
+  proposal_uuid: string;
 
   @Column('bigint', { transformer: [bigint] })
   round_id: number;

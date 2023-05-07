@@ -17,16 +17,16 @@ import { bigint } from '../transformer';
 import Proposal from './proposal';
 
 @Entity()
-@Index(['peer_id', 'proposal_id'], { unique: true })
+@Index(['peer_uuid', 'proposal_uuid'], { unique: true })
 export default class ProposalPeerPair {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  proposal_id: string;
+  proposal_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  peer_id: string;
+  peer_uuid: string;
 
   @Column('bigint', { transformer: [bigint] })
   discussion_voting_duration: number;

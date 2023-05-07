@@ -3,7 +3,7 @@ import KBucket from 'k-bucket';
 import { KBucketContact } from '../shared/types';
 import { sleep } from '../shared/utils';
 import { shuffle, random } from '../src/backend/utils';
-import { forward, broadcast_to_buckets, compute_n_replica } from '../src/backend/p2pbroadcast/utils';
+import { forward, broadcast_to_buckets, compute_n_replica } from '../src/backend/dht-helper/utils';
 
 function print_kb(kb) {
   function print(node, depth = 1) {

@@ -24,10 +24,10 @@ import { ID_LENGTH } from '../../../../shared/constant';
 import { bigint } from '../transformer';
 
 @Entity()
-@Index(['round_id', 'proposal_id'], { unique: true })
+@Index(['round_id', 'proposal_uuid'], { unique: true })
 export default class Conference implements DBConference {
   @PrimaryColumn('varchar', { length: ID_LENGTH })
-  id: string;
+  uuid: string;
 
   @Column({
     type: 'int',
@@ -39,7 +39,7 @@ export default class Conference implements DBConference {
   round_id: number;
 
   @Column('varchar', { length: ID_LENGTH })
-  proposal_id: string;
+  proposal_uuid: string;
 
   @Column('bigint', { transformer: [bigint] })
   computed_n_proposer: number;

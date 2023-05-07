@@ -7,7 +7,7 @@ import {
   JoinColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { DBSolutionComment, IPFSAddress } from '../../../../shared/types';
+import { DBSolutionComment, IPFSAddress, SolutionContent } from '../../../../shared/types';
 import Peer from './peer';
 import Solution from './solution';
 import Proposal from './proposal';
@@ -15,15 +15,15 @@ import { ID_LENGTH } from '../../../../shared/constant';
 
 @Entity()
 export default class SolutionComment implements DBSolutionComment {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  content_cid: IPFSAddress;
+  content_cid: IPFSAddress<SolutionContent>;
 
   @Column('varchar', { length: ID_LENGTH })
-  solution_id: string;
+  solution_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  peer_id: string;
+  peer_uuid: string;
 }

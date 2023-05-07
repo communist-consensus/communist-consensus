@@ -21,14 +21,14 @@ import Proposal from './proposal';
 
 @Entity()
 export default class DomainProposalPair implements DBDomainProposalPair {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  domain_id: string;
+  domain_uuid: string;
 
   @Column('varchar', { length: ID_LENGTH })
-  proposal_id: string;
+  proposal_uuid: string;
 
   @Column({
     type: 'int',
