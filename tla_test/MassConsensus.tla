@@ -36,10 +36,7 @@ ASSUME NF ==
 
 Proc == 1 .. N
 Location == { "prevote", "vote", "mainvote", "finalvote" }
-Location2 == { "prevote", "vote", "mainvote", "finalvote", "decide" }
 vars == << sent, consumed, isByz, nByz, r, pc >>
-V == 0 .. 1
-V2 == 0 .. 3 (* 0表示发送0 1表示发送1 2表示都发送或者不确定 3表示未发送 *)
 Node == {
     "prevote0",
     "prevote1", (*prevote和vote阶段可能投票2次*)
@@ -56,13 +53,14 @@ Node == {
 rounds == 0 .. 3
 
 Init ==  
+  (* 0表示发送0;1表示发送1;2表示都发送或者不确定;3表示未发送 *)
   /\ sent = [ ro \in rounds |-> [loc \in Location |-> [i \in Proc |-> [j \in Proc |-> 3]]]] (* round -> location -> sender -> receiver -> 0|1|2|3*)
-  (*收到消息后是否已处理*)
+  (*收到消息后是否已处理;每一种消息只处理一次*)
   /\ consumed = [ro \in rounds |-> [i \in Proc |-> [node \in Node |-> 0]]] (* round -> proc -> node -> 0|1 *)
   /\ r = [ i \in Proc |-> 0 ]
   /\ isByz = [ i \in Proc |-> 0 ]
   /\ nByz = 0
-  /\ pc = [ i \in Proc |-> "prevote" ] (*当前阶段*)
+  /\ pc = [ i \in Proc |-> "init" ] (*当前阶段*)
   
 BecomeByzantine1(i) ==
   /\ nByz < F
@@ -122,23 +120,24 @@ ConsumeHonest(sender) ==
     \/ \E n \in Node:
         /\ consumed[r[sender]][sender][n] = 0 (*该阶段未处理*)
         /\ \/ /\ n = "prevote0"
-              /\ pc[sender] = "prevote"
-              /\ \/ VoteSum(sender, "prevote", 0) >= guardR1
-                 \/ sent[r[sender]]["prevote"][sender][1] = 3
+              /\ \/ /\ pc[sender] = "prevote"
+                    /\ VoteSum(sender, "prevote", 0) >= guardR1
+                 \/ pc[sender] = "init"
               /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "prevote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ UNCHANGED << pc , r, isByz, nByz >>
+              /\ pc' = [pc EXCEPT ![sender] = "prevote"]
+              /\ UNCHANGED << r, isByz, nByz >>
            \/ /\ n = "prevote1"
-              /\ pc[sender] = "prevote"
-              /\ \/ VoteSum(sender, "prevote", 1) >= guardR1
-                 \/ sent[r[sender]]["prevote"][sender][1] = 3
+              /\ \/ /\ pc[sender] = "prevote"
+                    /\ VoteSum(sender, "prevote", 1) >= guardR1
+                 \/ pc[sender] = "init"
               /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "prevote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ UNCHANGED << pc , r, isByz, nByz >>
+              /\ pc' = [pc EXCEPT ![sender] = "prevote"]
+              /\ UNCHANGED << r, isByz, nByz >>
            \/ n = "vote0"
               /\ \/ pc[sender] = "prevote"
                  \/ pc[sender] = "vote"
-              /\ sent[r[sender]]["prevote"][sender][1] # 3
               /\ VoteSum(sender, "prevote", 0) >= guardR2
               /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "vote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
@@ -147,7 +146,6 @@ ConsumeHonest(sender) ==
            \/ n = "vote1"
               /\ \/ pc[sender] = "prevote"
                  \/ pc[sender] = "vote"
-              /\ sent[r[sender]]["prevote"][sender][1] # 3
               /\ VoteSum(sender, "prevote", 1) >= guardR2
               /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "vote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
