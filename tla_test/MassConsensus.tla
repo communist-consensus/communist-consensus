@@ -97,12 +97,12 @@ IN Helper(s)
 
 VoteSum(sender, loc, x) == 
     ArrSum([
-        receiver \in Proc |-> IF sent[r[sender]][loc][sender][receiver] = x \/ 
-         sent[r[sender]][loc][sender][receiver] = 2 THEN 1 ELSE 0])
+        receiver \in Proc |-> IF sent[r[sender]][loc][receiver][sender] = x \/ 
+         sent[r[sender]][loc][receiver][sender] = 2 THEN 1 ELSE 0])
 
 VoteSumExact(sender, loc, x) ==
     ArrSum([
-        receiver \in Proc |-> IF sent[r[sender]][loc][sender][receiver] = x THEN 1 ELSE 0])
+        receiver \in Proc |-> IF sent[r[sender]][loc][receiver][sender] = x THEN 1 ELSE 0])
 
 broadcast(Op(_), sender, loc) ==
     /\ sent' = [
@@ -176,14 +176,14 @@ ConsumeHonest(sender) ==
               /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
               /\ UNCHANGED << r, isByz, nByz >>
            \/ n = "finalvote0"
-              /\ pc[sender] = "mianvote"
+              /\ pc[sender] = "mainvote"
               /\ VoteSum(sender, "mainvote", 0) >= guardR2
               /\ broadcast(LAMBDA x: 0, sender, "finalvote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
               /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
               /\ UNCHANGED << r, isByz, nByz >>
            \/ n = "finalvote1"
-              /\ pc[sender] = "mianvote"
+              /\ pc[sender] = "mainvote"
               (*TODO 只有mainvote1能进入此状态*)
               /\ VoteSum(sender, "mainvote", 1) >= guardR2
               /\ broadcast(LAMBDA x: 1, sender, "finalvote")
