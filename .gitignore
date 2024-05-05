@@ -1,0 +1,10 @@
+node_modules
+dist
+lib
+ipfs_tmp
+config/*.ts
+.env
+.next
+tla_test/states
+
+*.out
