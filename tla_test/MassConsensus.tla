@@ -217,9 +217,7 @@ Consume(i) ==
   
 Decide(i) ==
   /\ isByz[i] = 0
-  /\ \/ pc[i] = "finalvote0"
-     \/ pc[i] = "finalvote1"
-     \/ pc[i] = "finalvote*"
+  /\ pc[i] = "finalvote"
   /\ \/ /\ VoteSumExact(i, "finalvote", 0) >= guardR2
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << sent, consumed, r, isByz, nByz >>
