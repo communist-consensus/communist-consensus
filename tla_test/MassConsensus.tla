@@ -138,6 +138,7 @@ ConsumeHonest(sender) ==
            \/ n = "vote0"
               /\ \/ pc[sender] = "prevote"
                  \/ pc[sender] = "vote"
+              /\ sent[r[sender]]["prevote"][sender][1] # 3
               /\ VoteSum(sender, "prevote", 0) >= guardR2
               /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "vote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
@@ -146,6 +147,7 @@ ConsumeHonest(sender) ==
            \/ n = "vote1"
               /\ \/ pc[sender] = "prevote"
                  \/ pc[sender] = "vote"
+              /\ sent[r[sender]]["prevote"][sender][1] # 3
               /\ VoteSum(sender, "prevote", 1) >= guardR2
               /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "vote")
               /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
@@ -225,11 +227,13 @@ Decide(i) ==
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << sent, consumed, r, isByz, nByz >>
      \/ VoteSum(i, "finalvote", 0) >= guardR2
+        /\ VoteSumExact(i, "finalvote", 1) = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ broadcast(LAMBDA x: 0, i, "prevote")
         /\ UNCHANGED << consumed, isByz, nByz >>
      \/ VoteSum(i, "finalvote", 1) >= guardR2
+        /\ VoteSumExact(i, "finalvote", 0) = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ broadcast(LAMBDA x: 1, i, "prevote")
