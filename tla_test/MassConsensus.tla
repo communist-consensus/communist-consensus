@@ -56,12 +56,12 @@ Init ==
   (* 0表示发送0;1表示发送1;2表示都发送或者不确定;3表示未发送 *)
   /\ sent = [ ro \in rounds |-> [loc \in Location |-> [i \in Proc |-> [j \in Proc |-> 3]]]] (* round -> location -> sender -> receiver -> 0|1|2|3*)
   (*收到消息后是否已处理;每一种消息只处理一次*)
-  /\ consumed = [ro \in rounds |-> [i \in Proc |-> [node \in Node |-> 0]]] (* round -> proc -> node -> 0|1 *)
+  /\ consumed = [ro \in rounds |-> [i \in Proc |-> [node \in Node |-> 0]]]  (* round -> proc -> node -> 0|1 *)
   /\ r = [ i \in Proc |-> 0 ]
   /\ isByz = [ i \in Proc |-> 0 ]
   /\ nByz = 0
   /\ pc = [ i \in Proc |-> "init" ] (*当前阶段*)
-  
+
 BecomeByzantine1(i) ==
   /\ nByz < F
   /\ isByz[i] # 1
@@ -225,23 +225,30 @@ Decide(i) ==
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << sent, consumed, r, isByz, nByz >>
      \/ VoteSum(i, "finalvote", 0) >= guardR2
+        /\ VoteSumExact(i, "finalvote", 0) < guardR2
         /\ VoteSumExact(i, "finalvote", 1) = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ broadcast(LAMBDA x: 0, i, "prevote")
-        /\ UNCHANGED << consumed, isByz, nByz >>
+        /\ consumed' = [consumed EXCEPT ![r[i]][i]["prevote0"] = 1]
+        /\ UNCHANGED << isByz, nByz >>
      \/ VoteSum(i, "finalvote", 1) >= guardR2
+        /\ VoteSumExact(i, "finalvote", 1) < guardR2
         /\ VoteSumExact(i, "finalvote", 0) = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ broadcast(LAMBDA x: 1, i, "prevote")
-        /\ UNCHANGED << consumed, isByz, nByz >>
+        /\ consumed' = [consumed EXCEPT ![r[i]][i]["prevote1"] = 1]
+        /\ UNCHANGED << isByz, nByz >>
      \/ VoteSumExact(i, "finalvote", 1) + VoteSumExact(i, "finalvote", 0) + VoteSumExact(i, "finalvote", 2) >= guardR2
+        /\ VoteSumExact(i, "finalvote", 1) < guardR2
+        /\ VoteSumExact(i, "finalvote", 0) < guardR2
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         (* 假设随机的结果为1 *)
         /\ broadcast(LAMBDA x: 1, i, "prevote")
-        /\ UNCHANGED << consumed, isByz, nByz >>
+        /\ consumed' = [consumed EXCEPT ![r[i]][i]["prevote1"] = 1]
+        /\ UNCHANGED << isByz, nByz >>
 
 Next == 
   /\ \E self \in Proc : 
