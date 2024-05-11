@@ -167,6 +167,7 @@ ConsumeHonest(n, sender) ==
        /\ UNCHANGED << r, isByz, nByz >>
     \/ n = "mainvote*"
        /\ pc[sender] = "vote"
+       /\ consumed[r[sender]][sender]["vote1"] # 1
        /\ VoteSum(sender, "vote", 0) < guardR2
        /\ VoteSum(sender, "vote", 1) < guardR2
        /\ VoteSumExact(sender, "vote", 2) + VoteSumExact(sender, "vote", 1) + VoteSumExact(sender, "vote", 0) >= guardR2
@@ -191,6 +192,7 @@ ConsumeHonest(n, sender) ==
        /\ UNCHANGED << r, isByz, nByz >>
     \/ n = "finalvote*"
        /\ pc[sender] = "mainvote"
+       /\ consumed[r[sender]][sender]["mainvote1"] # 1
        /\ VoteSum(sender, "mainvote", 0) < guardR2
        /\ VoteSum(sender, "mainvote", 1) < guardR2
        /\ VoteSumExact(sender, "mainvote", 2) + VoteSumExact(sender, "mainvote", 1) + VoteSumExact(sender, "mainvote", 0) >= guardR2
