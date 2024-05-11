@@ -11,11 +11,11 @@
    be found in the file LICENSE.
  *)
 
-EXTENDS Naturals, Integers, Sequences, FiniteSets
+EXTENDS Naturals, Integers, Sequences, FiniteSets, TLC
 
 (* 拜占庭节点可能拒绝消息、发出相反的消息、延迟消息 *)
 (* 诚实节点可能成为拜占庭节点，拜占庭节点可能成为诚实节点，但任一时刻的拜占庭节点总数小于F *)
-CONSTANTS N, F, guardR1, guardR2
+CONSTANTS N, F, guardR1, guardR2, DEBUG
 
 VARIABLES sent,
           consumed,  
@@ -26,6 +26,7 @@ VARIABLES sent,
                           
 
 ASSUME NF ==
+  /\ DEBUG \in BOOLEAN
   /\ guardR1 \in Nat
   /\ guardR2 \in Nat
   /\ N \in Nat
@@ -50,7 +51,7 @@ Node == {
     "finalvote*"
 }
 
-rounds == 0 .. 3
+rounds == 0 .. 2
 
 Init ==  
   (* 0表示发送0;1表示发送1;2表示都发送或者不确定;3表示未发送 *)
@@ -116,89 +117,87 @@ broadcast(Op(_), sender, loc) ==
         ELSE sent[_round][_loc]]
       ELSE sent[_round]]
 
-ConsumeHonest(sender) ==
-    \/ \E n \in Node:
-        /\ consumed[r[sender]][sender][n] = 0 (*该阶段未处理*)
-        /\ \/ /\ n = "prevote0"
-              /\ \/ /\ pc[sender] = "prevote"
-                    /\ VoteSum(sender, "prevote", 0) >= guardR1
-                 \/ pc[sender] = "init"
-              /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "prevote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "prevote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ /\ n = "prevote1"
-              /\ \/ /\ pc[sender] = "prevote"
-                    /\ VoteSum(sender, "prevote", 1) >= guardR1
-                 \/ pc[sender] = "init"
-              /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "prevote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "prevote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "vote0"
-              /\ \/ pc[sender] = "prevote"
-                 \/ pc[sender] = "vote"
-              /\ VoteSum(sender, "prevote", 0) >= guardR2
-              /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "vote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "vote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "vote1"
-              /\ \/ pc[sender] = "prevote"
-                 \/ pc[sender] = "vote"
-              /\ VoteSum(sender, "prevote", 1) >= guardR2
-              /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "vote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "vote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "mainvote0"
-              /\ pc[sender] = "vote"
-              /\ VoteSum(sender, "vote", 0) >= guardR2
-              /\ broadcast(LAMBDA x: 0, sender, "mainvote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "mainvote1"
-              /\ pc[sender] = "vote"
-              (*TODO 只有vote1能进入此状态*)
-              /\ VoteSum(sender, "vote", 1) >= guardR2
-              /\ broadcast(LAMBDA x: 1, sender, "mainvote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "mainvote*"
-              /\ pc[sender] = "vote"
-              /\ VoteSumExact(sender, "vote", 0) > 0
-              /\ VoteSumExact(sender, "vote", 1) > 0
-              /\ VoteSumExact(sender, "vote", 1) + VoteSumExact(sender, "vote", 0) >= guardR2
-              /\ broadcast(LAMBDA x: 2, sender, "mainvote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 2]
-              /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "finalvote0"
-              /\ pc[sender] = "mainvote"
-              /\ VoteSum(sender, "mainvote", 0) >= guardR2
-              /\ broadcast(LAMBDA x: 0, sender, "finalvote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "finalvote1"
-              /\ pc[sender] = "mainvote"
-              (*TODO 只有mainvote1能进入此状态*)
-              /\ VoteSum(sender, "mainvote", 1) >= guardR2
-              /\ broadcast(LAMBDA x: 1, sender, "finalvote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
-              /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
-              /\ UNCHANGED << r, isByz, nByz >>
-           \/ n = "finalvote*"
-              /\ pc[sender] = "mainvote"
-              /\ VoteSumExact(sender, "mainvote", 0) > 0
-              /\ VoteSumExact(sender, "mainvote", 1) > 0
-              /\ VoteSumExact(sender, "mainvote", 1) + VoteSumExact(sender, "mainvote", 0) >= guardR2
-              /\ broadcast(LAMBDA x: 2, sender, "finalvote")
-              /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 2]
-              /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
-              /\ UNCHANGED << r, isByz, nByz >>
+ConsumeHonest(n, sender) ==
+    \/ /\ n = "prevote0"
+       /\ \/ /\ pc[sender] = "prevote"
+             /\ VoteSum(sender, "prevote", 0) >= guardR1
+          \/ pc[sender] = "init"
+       /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "prevote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "prevote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ /\ n = "prevote1"
+       /\ \/ /\ pc[sender] = "prevote"
+             /\ VoteSum(sender, "prevote", 1) >= guardR1
+          \/ pc[sender] = "init"
+       /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "prevote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "prevote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "vote0"
+       /\ \/ pc[sender] = "prevote"
+          \/ pc[sender] = "vote"
+       /\ VoteSum(sender, "prevote", 0) >= guardR2
+       /\ broadcast(LAMBDA x: IF x = 1 THEN 2 ELSE 0, sender, "vote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "vote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "vote1"
+       /\ \/ pc[sender] = "prevote"
+          \/ pc[sender] = "vote"
+       /\ VoteSum(sender, "prevote", 1) >= guardR2
+       /\ broadcast(LAMBDA x: IF x = 0 THEN 2 ELSE 1, sender, "vote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "vote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "mainvote0"
+       /\ pc[sender] = "vote"
+       /\ VoteSum(sender, "vote", 0) >= guardR2
+       /\ broadcast(LAMBDA x: 0, sender, "mainvote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "mainvote1"
+       /\ pc[sender] = "vote"
+       /\ consumed[r[sender]][sender]["vote1"] = 1
+       /\ VoteSum(sender, "vote", 1) >= guardR2
+       /\ broadcast(LAMBDA x: 1, sender, "mainvote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "mainvote*"
+       /\ pc[sender] = "vote"
+       /\ VoteSum(sender, "vote", 0) < guardR2
+       /\ VoteSum(sender, "vote", 1) < guardR2
+       /\ VoteSumExact(sender, "vote", 2) + VoteSumExact(sender, "vote", 1) + VoteSumExact(sender, "vote", 0) >= guardR2
+       /\ broadcast(LAMBDA x: 2, sender, "mainvote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "finalvote0"
+       /\ pc[sender] = "mainvote"
+       /\ VoteSum(sender, "mainvote", 0) >= guardR2
+       /\ broadcast(LAMBDA x: 0, sender, "finalvote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "finalvote1"
+       /\ pc[sender] = "mainvote"
+       /\ consumed[r[sender]][sender]["mainvote1"] = 1
+       /\ VoteSum(sender, "mainvote", 1) >= guardR2
+       /\ broadcast(LAMBDA x: 1, sender, "finalvote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
+       /\ UNCHANGED << r, isByz, nByz >>
+    \/ n = "finalvote*"
+       /\ pc[sender] = "mainvote"
+       /\ VoteSum(sender, "mainvote", 0) < guardR2
+       /\ VoteSum(sender, "mainvote", 1) < guardR2
+       /\ VoteSumExact(sender, "mainvote", 2) + VoteSumExact(sender, "mainvote", 1) + VoteSumExact(sender, "mainvote", 0) >= guardR2
+       /\ broadcast(LAMBDA x: 2, sender, "finalvote")
+       /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+       /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
+       /\ UNCHANGED << r, isByz, nByz >>
 
 ConsumeByz1(i) ==
     /\ \E v \in {0, 1, 2}:
@@ -209,7 +208,9 @@ ConsumeByz1(i) ==
 
 Consume(i) ==
   \/ /\ isByz[i] = 0
-     /\ ConsumeHonest(i)
+     /\  \/ \E n \in Node:
+            /\ consumed[r[i]][i][n] = 0 (*该阶段未处理*)
+            /\ ConsumeHonest(n, i)
   \/ /\ isByz[i] = 1 (* 拜占庭节点向任意节点发送任意投票 *)
      /\ ConsumeByz1(i)
   \/ /\ isByz[i] = 2
@@ -262,7 +263,7 @@ Next ==
 Spec == Init /\ [][Next]_vars 
              /\ WF_vars(\E self \in Proc : \/ Consume(self)
                                            \/ Decide(self))
-                                           
+
 (*
 TypeOK == 
   /\ pc \in [ Proc -> Location ]          
@@ -272,21 +273,21 @@ TypeOK ==
   /\ nRcvdE \in [ Proc -> 0..(nSntE + nByz) ]
   /\ nRcvdR \in [ Proc -> 0..(nSntR + nByz) ]
   *)
-  
-  
+ 
+Symmetry == Permutations(Proc)
+
 (* 如果诚实节点都反对，那么没有一个后续状态使得任意节点accept
 Unforg_Ltl ==
   (\A i \in Proc :
    \/ isByz[i] # 0
    \/ pc[i] = "V0") => []( \A i \in Proc : pc[i] # "decide" )
-  *)
+ *)
+
+(* Liveness check *)
 
 (* 一定出现一种后续状态使得至少一个节点accept*)
 Corr_Ltl == 
-   (\A i \in Proc :
-   \/ isByz[i] # 0
-   \/ pc[i] = "prevote"
-   ) => <>( \E i \in Proc : pc[i] = "decide" )
+   []<>( \E i \in Proc : pc[i] = "decide" )
 
 (* 如果至少一个诚实节点accept，那么所有诚实节点终将accept*)
 Agreement_Ltl ==
