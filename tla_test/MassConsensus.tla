@@ -251,6 +251,8 @@ Decide(i) ==
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << sent, consumed, r, isByz, nByz >>
      \/ VoteSum(i, "finalvote", 0) >= guardR2
+        /\ VoteSum(i, "prevote", 0) >= guardR2
+        /\ VoteSum(i, "prevote", 1) >= guardR2
         /\ VoteSumExact(i, "mainvote", 2) >= guardR1
         /\ VoteSumExact(i, "finalvote", 0) < guardR2
         /\ VoteSumExact(i, "finalvote", 1) = 0
@@ -260,6 +262,8 @@ Decide(i) ==
         /\ consumed' = [consumed EXCEPT ![r[i]][i]["prevote0"] = 1]
         /\ UNCHANGED << isByz, nByz >>
      \/ VoteSum(i, "finalvote", 1) >= guardR2
+        /\ VoteSum(i, "prevote", 0) >= guardR2
+        /\ VoteSum(i, "prevote", 1) >= guardR2
         /\ VoteSumExact(i, "mainvote", 2) >= guardR1
         /\ VoteSumExact(i, "finalvote", 1) < guardR2
         /\ VoteSumExact(i, "finalvote", 0) = 0
