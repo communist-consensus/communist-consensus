@@ -243,12 +243,15 @@ Decide(i) ==
   /\ isByz[i] = 0
   /\ pc[i] = "finalvote"
   /\ \/ /\ VoteSumExact(i, "finalvote", 0) >= guardR2
+        /\ VoteSumExact(i, "mainvote", 0) >= guardR1
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << sent, consumed, r, isByz, nByz >>
      \/ /\ VoteSumExact(i, "finalvote", 1) >= guardR2
+        /\ VoteSumExact(i, "mainvote", 1) >= guardR1
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << sent, consumed, r, isByz, nByz >>
      \/ VoteSum(i, "finalvote", 0) >= guardR2
+        /\ VoteSumExact(i, "mainvote", 2) >= guardR1
         /\ VoteSumExact(i, "finalvote", 0) < guardR2
         /\ VoteSumExact(i, "finalvote", 1) = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
@@ -257,6 +260,7 @@ Decide(i) ==
         /\ consumed' = [consumed EXCEPT ![r[i]][i]["prevote0"] = 1]
         /\ UNCHANGED << isByz, nByz >>
      \/ VoteSum(i, "finalvote", 1) >= guardR2
+        /\ VoteSumExact(i, "mainvote", 2) >= guardR1
         /\ VoteSumExact(i, "finalvote", 1) < guardR2
         /\ VoteSumExact(i, "finalvote", 0) = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
