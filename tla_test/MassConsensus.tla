@@ -169,7 +169,6 @@ ConsumeHonestMainVote1(sender) ==
 
 ConsumeHonestMainVoteStar(sender) ==
   /\ pc[sender] = "vote"
-  /\ consumed[r[sender]][sender]["vote1"] # 1
   /\ VoteSum(sender, "prevote", 0) >= guardR2
   /\ VoteSum(sender, "prevote", 1) >= guardR2
   /\ VoteSum(sender, "vote", 0) >= guardR1
@@ -195,7 +194,6 @@ ConsumeHonestFinalVote1(sender) ==
 
 ConsumeHonestFinalVoteStar(sender) ==
   /\ pc[sender] = "mainvote"
-  /\ consumed[r[sender]][sender]["mainvote1"] # 1
   /\ VoteSum(sender, "prevote", 0) >= guardR2
   /\ VoteSum(sender, "prevote", 1) >= guardR2
   /\ VoteSum(sender, "vote", 0) >= guardR1
