@@ -98,18 +98,25 @@ ConsumeHonestPrevote0(sender) ==
   /\ \/ VoteSum(sender, "prevote0") >= guardR1
      \/ pc[sender] = "init"
   /\ consumed[r[sender]][sender]["prevote1"] = 0
-  /\ pc' = [pc EXCEPT ![sender] = IF @ # "init" THEN @ ELSE "prevote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ \/ /\ pc[sender] = "init"
+        /\ pc' = [pc EXCEPT ![sender] = "prevote"]
+        /\ UNCHANGED << r, isByz, nByz >>
+     \/ UNCHANGED << r, isByz, nByz, pc >>
 
+(*
+1. 完成RBCi后repropose 1。为简化模型，只有第一轮可能发生
+2. 收到guardR1个prevote1后repropose1
+*)
 ConsumeHonestPrevote1(sender) ==
-  /\ \/ pc[sender] = "prevote"
-     \/ pc[sender] = "init"
-  /\ pc' = [pc EXCEPT ![sender] = IF @ # "init" THEN @ ELSE "prevote"]
-  /\ UNCHANGED << r, isByz, nByz >>
-
-RePrevote1(sender) ==
-  /\ \/ VoteSum(sender, "prevote1") >= guardR1
-  /\ pc' = [pc EXCEPT ![sender] = IF @ # "init" THEN @ ELSE "prevote"]
+  /\ \/ /\ r[sender] = 0
+        /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
+     \/ /\ r[sender] # 0
+        /\ VoteSum(sender, "prevote1") >= guardR1
+  /\ consumed' = [consumed EXCEPT ![r[sender]][sender]["prevote1"] = 1,
+                                  ![r[sender]][sender]["vote1"] = (IF consumed[r[sender]][sender]["vote0"] = 0 THEN 1 ELSE 0),
+                                  ![r[sender]][sender]["mainvote1"] = (IF consumed[r[sender]][sender]["mainvote0"] = 0 /\ consumed[r[sender]][sender]["mainvote*"] = 0 THEN 1 ELSE 0),
+                                  ![r[sender]][sender]["finalvote1"] = (IF consumed[r[sender]][sender]["finalvote0"] = 0 /\ consumed[r[sender]][sender]["finalvote*"] = 0 THEN 1 ELSE 0)
+                                  ]
   /\ UNCHANGED << r, isByz, nByz >>
 
 ConsumeHonestVote0(sender) ==
@@ -201,7 +208,9 @@ Consume(sender) ==
                  /\ ConsumeHonestFinalVote1(sender)
               \/ /\ n = "finalvote*"
                  /\ ConsumeHonestFinalVoteStar(sender)
-           /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
+           /\ \/ /\ n = "prevote1"
+              \/ /\ n # "prevote1"
+                 /\ consumed' = [consumed EXCEPT ![r[sender]][sender][n] = 1]
   \/ /\ isByz[sender] = 1 (* 拜占庭节点向任意节点发送任意投票 *)
      /\ ConsumeByz1(sender)
   \/ /\ isByz[sender] = 2
@@ -224,33 +233,36 @@ finalvote* > G2
 Decide(i) ==
   /\ isByz[i] = 0
   /\ pc[i] = "finalvote"
+  /\ \/ VoteSum(i, "mainvote0") >= guardR1
+     \/ VoteSum(i, "mainvote1") >= guardR1
   /\ \/ /\ VoteSum(i, "finalvote0") >= guardR2
-        /\ consumed[r[i]][i]["mainvote0"] = 1
+        /\ consumed[r[i]][i]["vote0"] = 1
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << consumed, r, isByz, nByz >>
      \/ /\ VoteSum(i, "finalvote1") >= guardR2
-        /\ consumed[r[i]][i]["mainvote1"] = 1
+        /\ consumed[r[i]][i]["vote1"] = 1
         /\ pc' = [pc EXCEPT ![i] = "decide"]
         /\ UNCHANGED << consumed, r, isByz, nByz >>
      \/ VoteSum(i, "finalvote0") + VoteSum(i, "finalvote*") >= guardR2
         /\ VoteSum(i, "finalvote0") < VoteSum(i, "finalvote*")
-        /\ consumed[r[i]][i]["mainvote0"] = 1
+        /\ consumed[r[i]][i]["vote0"] = 1
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ consumed' = [consumed EXCEPT ![r[i] + 1][i]["prevote0"] = 1]
         /\ UNCHANGED << isByz, nByz >>
      \/ VoteSum(i, "finalvote1") + VoteSum(i, "finalvote*") >= guardR2
         /\ VoteSum(i, "finalvote1") < VoteSum(i, "finalvote*")
-        /\ consumed[r[i]][i]["mainvote1"] = 1
+        /\ consumed[r[i]][i]["vote1"] = 1
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ consumed' = [consumed EXCEPT ![r[i]+ 1][i]["prevote1"] = 1]
         /\ UNCHANGED << isByz, nByz >>
      \/ VoteSum(i, "finalvote*") + VoteSum(i, "finalvote0") + VoteSum(i, "finalvote1") >= guardR2
+        /\ VoteSum(i, "finalvote0") < guardR2
+        /\ VoteSum(i, "finalvote1") < guardR2
         /\ consumed[r[i]][i]["mainvote*"] = 1
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
-        (* 假设随机的结果为1 *)
         /\ consumed' = [consumed EXCEPT ![r[i] + 1][i]["prevote1"] = 1]
         /\ UNCHANGED << isByz, nByz >>
 
