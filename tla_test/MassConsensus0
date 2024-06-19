@@ -21,7 +21,8 @@ VARIABLES consumed,
           isByz, (* 拜占庭类型 0,非拜占庭，1，发送任意投票, 2沉默，诚实节点离线时也视为2类拜占庭 *)
           nByz, (* the number of Byzantine processes                      *)
           pc, (* 当前阶段 *)
-          r (* 当前轮次*)
+          r, (* 当前轮次*)
+          decide
                           
 
 ASSUME NF ==
@@ -35,7 +36,8 @@ ASSUME NF ==
   /\ guardR2 > (2 * N) \div 3
 
 Proc == 1 .. N
-vars == << consumed, isByz, nByz, r, pc >>
+vars == << consumed, isByz, nByz, r, pc, decide >>
+
 Node == {
     "prevote0",
     "prevote1", (*prevote和vote阶段可能投票2次*)
@@ -58,6 +60,7 @@ Init ==
   /\ isByz = [ i \in Proc |-> 0 ]
   /\ nByz = 0
   /\ pc = [ i \in Proc |-> "init" ] (*当前阶段*)
+  /\ decide = [ i \in Proc |-> -1 ]
 
 BecomeByzantine1(i) ==
   /\ nByz < F
@@ -66,7 +69,7 @@ BecomeByzantine1(i) ==
      \/ /\ isByz[i] = 0
         /\ nByz' = nByz + 1  
   /\ isByz' = [ isByz EXCEPT ![i] = 1 ]  
-  /\ UNCHANGED << pc , r, consumed >>
+  /\ UNCHANGED << pc , r, consumed, decide >>
 
 BecomeByzantine2(i) ==
   /\ nByz < F
@@ -76,14 +79,14 @@ BecomeByzantine2(i) ==
         /\ nByz' = nByz + 1  
   /\ pc[i] # "init"
   /\ isByz' = [ isByz EXCEPT ![i] = 2 ]  
-  /\ UNCHANGED << pc , r, consumed >>
+  /\ UNCHANGED << pc , r, consumed, decide >>
 
 BecomeHonest(i) ==
   /\ nByz > 0
   /\ isByz[i] > 0
   /\ nByz' = nByz - 1  
   /\ isByz' = [ isByz EXCEPT ![i] = 0 ]  
-  /\ UNCHANGED << pc , r, consumed >>
+  /\ UNCHANGED << pc , r, consumed, decide >>
 
 ArrSum(s) == LET
   RECURSIVE Helper(_)
@@ -100,8 +103,8 @@ ConsumeHonestPrevote0(sender) ==
   /\ consumed[r[sender]][sender]["prevote1"] = 0
   /\ \/ /\ pc[sender] = "init"
         /\ pc' = [pc EXCEPT ![sender] = "prevote"]
-        /\ UNCHANGED << r, isByz, nByz >>
-     \/ UNCHANGED << r, isByz, nByz, pc >>
+        /\ UNCHANGED << r, isByz, nByz, decide >>
+     \/ UNCHANGED << r, isByz, nByz, pc, decide >>
 
 (*
 1. 完成RBCi后repropose 1。为简化模型，只有第一轮可能发生
@@ -110,35 +113,32 @@ ConsumeHonestPrevote0(sender) ==
 ConsumeHonestPrevote1(sender) ==
   /\ \/ /\ r[sender] = 0
         /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
+        /\ consumed' = [consumed EXCEPT ![0][sender]["prevote1"] = 1,
+                                        ![0][sender]["vote1"] = (IF consumed[0][sender]["vote0"] = 0 THEN 1 ELSE 0),
+                                        ![0][sender]["mainvote1"] = (IF consumed[0][sender]["mainvote0"] = 0 /\ consumed[0][sender]["mainvote*"] = 0 THEN 1 ELSE 0),
+                                        ![0][sender]["finalvote1"] = (IF consumed[0][sender]["finalvote0"] = 0 /\ consumed[0][sender]["finalvote*"] = 0 THEN 1 ELSE 0)
+                                        ]
      \/ /\ r[sender] # 0
         /\ VoteSum(sender, "prevote1") >= guardR1
-  /\ consumed' = [consumed EXCEPT ![r[sender]][sender]["prevote1"] = 1,
-                                  ![r[sender]][sender]["vote1"] = (IF consumed[r[sender]][sender]["vote0"] = 0 THEN 1 ELSE 0),
-                                  ![r[sender]][sender]["mainvote1"] = (IF consumed[r[sender]][sender]["mainvote0"] = 0 /\ consumed[r[sender]][sender]["mainvote*"] = 0 THEN 1 ELSE 0),
-                                  ![r[sender]][sender]["finalvote1"] = (IF consumed[r[sender]][sender]["finalvote0"] = 0 /\ consumed[r[sender]][sender]["finalvote*"] = 0 THEN 1 ELSE 0)
-                                  ]
-  /\ UNCHANGED << r, isByz, nByz >>
+        /\ consumed' = [consumed EXCEPT ![r[sender]][sender]["prevote1"] = 1]
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestVote0(sender) ==
-  /\ \/ pc[sender] = "prevote"
-     \/ pc[sender] = "vote"
   /\ VoteSum(sender, "prevote0") >= guardR2
-  /\ pc' = [pc EXCEPT ![sender] = "vote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ pc' = [pc EXCEPT ![sender] = IF pc[sender] = "prevote" THEN "vote" ELSE @]
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestVote1(sender) ==
-  /\ \/ pc[sender] = "prevote"
-     \/ pc[sender] = "vote"
   /\ VoteSum(sender, "prevote1") >= guardR2
-  /\ pc' = [pc EXCEPT ![sender] = "vote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ pc' = [pc EXCEPT ![sender] = IF pc[sender] = "prevote" THEN "vote" ELSE @]
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestMainVote0(sender) ==
   /\ pc[sender] = "vote"
   /\ VoteSum(sender, "vote0") >= guardR2
   /\ VoteSum(sender, "prevote0") >= guardR2
   /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestMainVote1(sender) ==
   /\ pc[sender] = "vote"
@@ -147,7 +147,7 @@ ConsumeHonestMainVote1(sender) ==
   /\ VoteSum(sender, "vote1") >= guardR2
   /\ VoteSum(sender, "prevote1") >= guardR2
   /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestMainVoteStar(sender) ==
   /\ pc[sender] = "vote"
@@ -157,20 +157,20 @@ ConsumeHonestMainVoteStar(sender) ==
   /\ VoteSum(sender, "vote1") > 0
   /\ VoteSum(sender, "vote0") + VoteSum(sender, "vote1") >= guardR2
   /\ pc' = [pc EXCEPT ![sender] = "mainvote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestFinalVote0(sender) ==
   /\ pc[sender] = "mainvote"
   /\ VoteSum(sender, "mainvote0") >= guardR2
   /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestFinalVote1(sender) ==
   /\ pc[sender] = "mainvote"
   /\ consumed[r[sender]][sender]["mainvote1"] = 1
   /\ VoteSum(sender, "mainvote1") >= guardR2
   /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
 ConsumeHonestFinalVoteStar(sender) ==
   /\ pc[sender] = "mainvote"
@@ -180,14 +180,16 @@ ConsumeHonestFinalVoteStar(sender) ==
   /\ VoteSum(sender, "vote1") > 0
   /\ VoteSum(sender, "vote0") + VoteSum(sender, "vote1") >= guardR2
   /\ pc' = [pc EXCEPT ![sender] = "finalvote"]
-  /\ UNCHANGED << r, isByz, nByz >>
+  /\ UNCHANGED << r, isByz, nByz, decide >>
 
-ConsumeByz1(i) == UNCHANGED << pc, consumed, r, isByz, nByz >>
+ConsumeByz1(i) == UNCHANGED << pc, consumed, r, isByz, nByz, decide >>
 
 Consume(sender) ==
   \/ /\ isByz[sender] = 0
      /\ \/ \E n \in Node:
            /\ consumed[r[sender]][sender][n] = 0 (*该阶段未处理*)
+           /\ pc[sender] # "decide0"
+           /\ pc[sender] # "decide1"
            /\ \/ /\ n = "prevote0"
                  /\ ConsumeHonestPrevote0(sender)
               \/ /\ n = "prevote1"
@@ -233,30 +235,46 @@ finalvote* > G2
 Decide(i) ==
   /\ isByz[i] = 0
   /\ pc[i] = "finalvote"
-  /\ \/ VoteSum(i, "mainvote0") >= guardR1
-     \/ VoteSum(i, "mainvote1") >= guardR1
+  /\ decide[i] = -1
+  /\ \/ /\ r[i] = 0
+        /\ \/ /\ VoteSum(i, "prevote0") >= guardR2
+              /\ consumed[r[i]][i]["prevote0"] = 1
+           \/ /\ VoteSum(i, "prevote1") >= guardR2
+              /\ consumed[r[i]][i]["prevote1"] = 1
+     \/ /\ r[i] # 0
+        /\ \/ VoteSum(i, "mainvote0") >= guardR1
+           \/ VoteSum(i, "mainvote1") >= guardR1
   /\ \/ /\ VoteSum(i, "finalvote0") >= guardR2
         /\ consumed[r[i]][i]["vote0"] = 1
-        /\ pc' = [pc EXCEPT ![i] = "decide"]
-        /\ UNCHANGED << consumed, r, isByz, nByz >>
+        /\ r[i] # 0
+        /\ decide' = [decide EXCEPT ![i] = 0]
+        /\ \/ /\ r[i] = 0
+              /\ r' = [r EXCEPT ![i] = @ + 1]
+              /\ UNCHANGED << isByz, nByz, pc, consumed >>
+           \/ /\ r[i] # 0
+              /\ UNCHANGED << r, isByz, nByz, pc, consumed >>
      \/ /\ VoteSum(i, "finalvote1") >= guardR2
         /\ consumed[r[i]][i]["vote1"] = 1
-        /\ pc' = [pc EXCEPT ![i] = "decide"]
-        /\ UNCHANGED << consumed, r, isByz, nByz >>
+        /\ decide' = [decide EXCEPT ![i] = 1]
+        /\ \/ /\ r[i] = 0
+              /\ r' = [r EXCEPT ![i] = @ + 1]
+              /\ pc' = [pc EXCEPT ![i] = "prevote"]
+              /\ consumed' = [consumed EXCEPT ![r[i] + 1][i]["prevote1"] = 1]
+              /\ UNCHANGED << isByz, nByz >>
+           \/ r[i] # 0
+              /\ UNCHANGED << r, isByz, nByz, pc, consumed >>
      \/ VoteSum(i, "finalvote0") + VoteSum(i, "finalvote*") >= guardR2
-        /\ VoteSum(i, "finalvote0") < VoteSum(i, "finalvote*")
-        /\ consumed[r[i]][i]["vote0"] = 1
+        /\ VoteSum(i, "finalvote1") = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ consumed' = [consumed EXCEPT ![r[i] + 1][i]["prevote0"] = 1]
-        /\ UNCHANGED << isByz, nByz >>
+        /\ UNCHANGED << isByz, nByz, decide >>
      \/ VoteSum(i, "finalvote1") + VoteSum(i, "finalvote*") >= guardR2
-        /\ VoteSum(i, "finalvote1") < VoteSum(i, "finalvote*")
-        /\ consumed[r[i]][i]["vote1"] = 1
+        /\ VoteSum(i, "finalvote0") = 0
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ consumed' = [consumed EXCEPT ![r[i]+ 1][i]["prevote1"] = 1]
-        /\ UNCHANGED << isByz, nByz >>
+        /\ UNCHANGED << isByz, nByz, decide >>
      \/ VoteSum(i, "finalvote*") + VoteSum(i, "finalvote0") + VoteSum(i, "finalvote1") >= guardR2
         /\ VoteSum(i, "finalvote0") < guardR2
         /\ VoteSum(i, "finalvote1") < guardR2
@@ -264,7 +282,7 @@ Decide(i) ==
         /\ r' = [r EXCEPT ![i] = @ + 1]
         /\ pc' = [pc EXCEPT ![i] = "prevote"]
         /\ consumed' = [consumed EXCEPT ![r[i] + 1][i]["prevote1"] = 1]
-        /\ UNCHANGED << isByz, nByz >>
+        /\ UNCHANGED << isByz, nByz, decide >>
 
 Next == 
   /\ \E self \in Proc : 
@@ -285,17 +303,19 @@ Spec == Init /\ [][Next]_vars
 Unforg_Ltl ==
   (\A i \in Proc :
    \/ isByz[i] # 0
-   \/ pc[i] = "V0") => []( \A i \in Proc : pc[i] # "decide" )
+   \/ pc[i] = "V0") => []( \A i \in Proc : pc[i] # "decide0" )
  *)
 
 (* Liveness check *)
 
 (* 一定出现一种后续状态使得至少一个节点accept*)
 Corr_Ltl == 
-   []<>( \E i \in Proc : pc[i] = "decide" )
+   []<>( \E i \in Proc : decide[i] = 0 \/ decide[i] = 1 )
 
 (* 如果至少一个诚实节点accept，那么所有诚实节点终将accept*)
-Agreement_Ltl ==
-  []((\E i \in Proc : pc[i] = "decide") => <>(\A i \in Proc : pc[i] = "decide" \/ isByz[i] # 0 ))
+Agreement_Ltl0 ==
+  []((\E i \in Proc : decide[i] = 0) => <>(\A i \in Proc : decide[i] = 0 \/ isByz[i] # 0 ))
+Agreement_Ltl1 ==
+  []((\E i \in Proc : decide[i] = 1) => <>(\A i \in Proc : decide[i] = 1 \/ isByz[i] # 0 ))
   
 =============================================================================
